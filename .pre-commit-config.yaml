@@ -1,0 +1,51 @@
+default_language_version:
+  python: python3
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        exclude: uv.lock|\.ai
+      - id: check-yaml
+      - id: check-json
+      - id: debug-statements
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: detect-private-key
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.11
+    hooks:
+      - id: ruff-format
+        types_or: [python, pyi, jupyter]
+      - id: ruff
+        args: [ "--fix", "--show-fixes"]
+        types_or: [python, pyi]
+  - repo: https://github.com/astral-sh/ty-pre-commit
+    rev: v0.0.49
+    hooks:
+      - id: ty
+        args: [ --frozen ]
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.9.24
+    hooks:
+      - id: uv-lock
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.36.0
+    hooks:
+      - id: check-github-workflows
+  - repo: https://github.com/tox-dev/pyproject-fmt
+    rev: v2.11.1
+    hooks:
+    - id: pyproject-fmt
+  - repo: local
+    hooks:
+      - id: clear-notebook-output
+        name: Clear Jupyter Notebook Outputs
+        entry: jupyter nbconvert --clear-output --inplace
+        language: python
+        additional_dependencies: [jupyter]
+        types: [jupyter]
+        files: \.ipynb$
