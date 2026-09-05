@@ -55,7 +55,7 @@ def _get_commensurate_sublattice_from_qpoint(
     elements = [Fraction(qi).limit_denominator(max_denominator).denominator for qi in qpoint]
     lcm = _lcm_on_list(elements)
     numerators = np.around(qpoint * lcm).astype(int)
-    g = _gcd_on_list(numerators)
+    g = _gcd_on_list([int(num) for num in numerators])
     A = np.array([num // g for num in numerators])[None, :]  # Now, GCD(A) = 1
 
     # Solve `A @ t = lcm`

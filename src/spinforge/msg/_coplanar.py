@@ -179,21 +179,22 @@ def _enumerate_magnetic_space_subgroups_coplanar_with_axis(
         _get_rotation_type(u) for u in coplanar_mirrored_spin_rotations
     ]
 
-    subgroups = enumerate_point_subgroup(
-        table,
-        preserve_sublattice=np.logical_and(
-            is_coplanar_spatial_rotations,
-            np.logical_or(
-                np.logical_and(
-                    np.abs(spatial_rotation_types) == spin_rotation_types,
-                    original_time_reversals == 1,
-                ),
-                np.logical_and(
-                    np.abs(spatial_rotation_types) == coplanar_mirrored_spin_rotation_types,
-                    original_time_reversals == -1,
-                ),
+    preserve_sublattice = np.logical_and(
+        is_coplanar_spatial_rotations,
+        np.logical_or(
+            np.logical_and(
+                np.abs(spatial_rotation_types) == spin_rotation_types,
+                original_time_reversals == 1,
+            ),
+            np.logical_and(
+                np.abs(spatial_rotation_types) == coplanar_mirrored_spin_rotation_types,
+                original_time_reversals == -1,
             ),
         ),
+    )
+    subgroups = enumerate_point_subgroup(
+        table,
+        preserve_sublattice=[bool(value) for value in preserve_sublattice],
         return_conjugacy_class=False,
     )
 

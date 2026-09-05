@@ -10,7 +10,7 @@ import numpy as np
 from loguru import logger
 from moyopy import Cell, MoyoDataset, SpaceGroup, SpaceGroupType
 from pymatgen.core import Element, Structure
-from spgrep.utils import NDArrayFloat, NDArrayInt
+from spgrep.utils import NDArrayComplex, NDArrayFloat, NDArrayInt
 from spinspg.spin import SpinOnlyGroup, SpinOnlyGroupType, get_spin_only_group
 
 from spinforge.msg import MagneticSpaceSubgroup
@@ -653,7 +653,7 @@ class SSAGenerator:
 
     @staticmethod
     def _validate_invariant_subgroup_reynolds(
-        reynolds_eigvals: NDArrayFloat,
+        reynolds_eigvals: NDArrayComplex | NDArrayFloat,
         atol: float,
     ) -> bool:
         """
