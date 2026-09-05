@@ -4,5 +4,5 @@ contact_links:
     url: https://github.com/spglib/spinforge/blob/main/SECURITY.md
     about: Read the private reporting instructions. Do not open a public issue.
   - name: Project scope and support policy
-    url: https://github.com/spglib/spinforge/blob/main/docs/project-policy.md
+    url: https://github.com/spglib/spinforge#project-scope-compatibility-and-support
     about: Check supported workflows and compatibility guarantees.

@@ -77,7 +77,7 @@ These examples are published as-is. The paper figures, MAGNDATA-derived
 datasets, and the raw 283-material SDFT workflow are not part of this
 repository.
 
-## Project scope and support
+## Project scope, compatibility, and support
 
 SpinForge provides symmetry enumeration, SSA and oriented-SSA structure
 generation, and spinCIF/MCIF-related utilities. It does not determine or refine
@@ -85,8 +85,22 @@ magnetic structures from experimental or first-principles data, and it does
 not include scattering, electronic-structure, or high-throughput DFT
 workflows.
 
-The [project policy](./docs/project-policy.md) defines the supported Python
-versions, API stability, scope, and support channels. Please use
+### Compatibility
+
+SpinForge supports Python 3.11 through 3.14. Beginning with version 1.0,
+documented interfaces re-exported by public SpinForge modules are kept
+compatible within the 1.x series. Names or modules with a leading underscore
+are private and may change without deprecation. Mathematical-validity,
+data-integrity, or security corrections are documented in the changelog when
+they require an exceptional incompatible change.
+
+The spinCIF dictionary is preliminary upstream. SpinForge records the supported
+revision in `spinforge.scif.SPINCIF_REVISION`, and spinCIF syntax may evolve
+independently of the Python API policy.
+
+### Support
+
+Please use
 [GitHub Issues](https://github.com/spglib/spinforge/issues) for reproducible
 bugs and in-scope feature requests. Security reports follow
 [SECURITY.md](./SECURITY.md).

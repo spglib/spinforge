@@ -46,5 +46,5 @@ checked against an independent invariant or oracle where practical.
 By submitting a contribution, you agree that it may be distributed under the
 project's [BSD 3-Clause License](./LICENSE).
 
-The public scope and compatibility policy are defined in
-[`docs/project-policy.md`](./docs/project-policy.md).
+The public scope and compatibility policy are defined in the
+[README](./README.md#project-scope-compatibility-and-support).
