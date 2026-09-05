@@ -1,12 +1,13 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = [ "setuptools>=45", "setuptools-scm[toml]>=6.2", "wheel" ]
+requires = [ "setuptools>=77", "setuptools-scm[toml]>=6.2", "wheel" ]
 
 [project]
 name = "spinforge"
 description = "Group-theoretic magnetic structure generator"
 readme = "README.md"
-license = { text = "BSD" }
+license = "BSD-3-Clause"
+license-files = [ "LICENSE", "docs/THIRD_PARTY_DATA.md" ]
 authors = [
   { name = "Kohei Shinohara", email = "kshinohara0508@gmail.com" },
 ]
@@ -14,7 +15,6 @@ requires-python = ">=3.11"
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: BSD License",
   "Operating System :: OS Independent",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3 :: Only",
@@ -31,7 +31,7 @@ dynamic = [
 dependencies = [
   "hsnf>=0.3.16",
   "loguru>=0.7.3",
-  "moyopy>=0.16",
+  "moyopy[interface]>=0.16",
   "pymatgen",
   "pymatgen-core>=2026.7.16",
   "scipy>=1.15.2",
