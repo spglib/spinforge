@@ -1,0 +1,39 @@
+name: Feature request
+description: Propose an enhancement within SpinForge's public scope
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please describe the scientific or user-facing need before proposing an
+        implementation.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem would this feature solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: What should SpinForge do?
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Scientific validation
+      description: What invariant, reference, or independent oracle could validate it?
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: >-
+            This request is about SpinForge's public symmetry-enumeration or
+            magnetic-structure-generation core.
+          required: true
+        - label: I searched existing issues for related requests.
+          required: true
