@@ -1,0 +1,39 @@
+cff-version: 1.2.0
+message: >-
+  If you use SpinForge in published work, please cite both the software and the
+  preferred paper below.
+title: SpinForge
+type: software
+version: 1.0.0
+authors:
+  - family-names: Shinohara
+    given-names: Kohei
+repository-code: https://github.com/spglib/spinforge
+url: https://github.com/spglib/spinforge
+license: BSD-3-Clause
+abstract: >-
+  A group-theoretic generator for spin-symmetry-adapted and oriented magnetic
+  crystal structures based on spin space groups.
+keywords:
+  - crystallography
+  - magnetic structures
+  - spin space groups
+  - symmetry
+preferred-citation:
+  type: article
+  title: >-
+    Systematic magnetic structure generation based on oriented spin space
+    groups: Formulation, applications, and high-throughput first-principles
+    calculations
+  authors:
+    - family-names: Nomoto
+      given-names: Takuya
+    - family-names: Shinohara
+      given-names: Kohei
+    - family-names: Watanabe
+      given-names: Hikaru
+    - family-names: Arita
+      given-names: Ryotaro
+  journal: Physical Review X
+  year: 2026
+  doi: 10.1103/8n3w-h2t1

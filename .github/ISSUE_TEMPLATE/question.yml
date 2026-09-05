@@ -1,0 +1,25 @@
+name: Usage question
+description: Ask a focused question about a supported SpinForge workflow
+title: "[Question]: "
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What are you trying to do?
+    validations:
+      required: true
+  - type: textarea
+    id: attempt
+    attributes:
+      label: What you tried
+      description: Include a minimal input or code sample where possible.
+    validations:
+      required: true
+  - type: input
+    id: spinforge-version
+    attributes:
+      label: SpinForge version
+      placeholder: "1.0.0"
+    validations:
+      required: true
