@@ -117,10 +117,22 @@ paper:
 > calculations,” *Physical Review X* (accepted 2026).
 > [doi:10.1103/8n3w-h2t1](https://doi.org/10.1103/8n3w-h2t1)
 
+```bibtex
+@article{Nomoto2026SpinForge,
+  author = {Nomoto, Takuya and Shinohara, Kohei and Watanabe, Hikaru and Arita, Ryotaro},
+  title = {Systematic Magnetic Structure Generation Based on Oriented Spin Space Groups:
+           Formulation, Applications, and High-Throughput First-Principles Calculations},
+  journal = {Physical Review X},
+  year = {2026},
+  doi = {10.1103/8n3w-h2t1},
+  note = {Accepted}
+}
+```
+
 ## Data attribution and license
 
 Third-party and literature-derived fixture notices are collected in
-[`THIRD_PARTY_DATA.md`](./THIRD_PARTY_DATA.md), including all Materials Project
+[`docs/THIRD_PARTY_DATA.md`](./docs/THIRD_PARTY_DATA.md), including all Materials Project
 fixtures and the MnTe and Mn3Sn source notices.
 
 SpinForge source code is distributed under the
