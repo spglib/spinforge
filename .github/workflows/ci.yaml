@@ -1,0 +1,54 @@
+name: testing
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+      - run: uv sync --extra testing --no-dev --frozen
+      - uses: pre-commit/action@v3.0.1
+        env:
+          SKIP: uv-lock
+
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.13"]
+        group: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: uv sync --extra testing --no-dev --frozen
+      - run: >-
+          uv run --no-project pytest -v -n 4 --dist load --maxschedchunk=1
+          --splits 3 --group ${{ matrix.group }} --splitting-algorithm least_duration
+          tests
+
+  ci:
+    if: always()
+    needs: [pre-commit, tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check required jobs
+        run: |
+          test "${{ needs.pre-commit.result }}" = success
+          test "${{ needs.tests.result }}" = success

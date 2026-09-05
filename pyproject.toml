@@ -1,0 +1,98 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [ "setuptools>=45", "setuptools-scm[toml]>=6.2", "wheel" ]
+
+[project]
+name = "spinforge"
+description = "Group-theoretic magnetic structure generator"
+readme = "README.md"
+license = { text = "BSD" }
+authors = [
+  { name = "Kohei Shinohara", email = "kshinohara0508@gmail.com" },
+]
+requires-python = ">=3.11"
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: BSD License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering :: Mathematics",
+  "Topic :: Scientific/Engineering :: Physics",
+]
+dynamic = [
+  "version",
+]
+dependencies = [
+  "hsnf>=0.3.16",
+  "loguru>=0.7.3",
+  "moyopy>=0.16",
+  "pymatgen",
+  "pymatgen-core>=2026.7.16",
+  "scipy>=1.15.2",
+  "spgrep>=0.7",
+  "spinspg>=0.3.2",
+]
+
+optional-dependencies.dev = [
+  "ipykernel",
+  "pre-commit",
+  "prek",
+  "setuptools-scm>=8.2",
+  "spinforge[testing]",
+]
+optional-dependencies.testing = [
+  "pytest",
+  "pytest-split",
+  "pytest-xdist",
+]
+
+[dependency-groups]
+dev = [ "spinforge[dev]" ]
+
+[tool.setuptools.package-data]
+"spinforge.testing" = [ "assets/*.cif", "assets/*.json" ]
+
+[tool.setuptools_scm]
+
+[tool.ruff]
+line-length = 99
+extend-exclude = [ "docs" ]
+lint.extend-select = [
+  "E",
+  "F",
+  "I",
+  "UP",
+]
+lint.extend-ignore = [
+  "D100",
+  "D101",
+  "D102",
+  "D103",
+  "D203",
+  "D205",
+  "D213",
+  "E501",
+]
+
+[tool.pytest.ini_options]
+addopts = "-m 'not slow and not cryst'"
+markers = [
+  "cryst: requires a separately installed GAP with Cryst (deselected by default)",
+  "slow: marks tests as slow (deselected by default, run with -m slow)",
+]
+testpaths = [ "tests" ]
+filterwarnings = [
+  "ignore:Issues encountered while parsing CIF:UserWarning",
+]
+
+[tool.ty.src]
+exclude = [ "docs" ]
+
+[tool.basedpyright]
+typeCheckingMode = "standard"
