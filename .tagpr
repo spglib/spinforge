@@ -1,0 +1,8 @@
+[tagpr]
+	vPrefix = true
+	releaseBranch = main
+	versionFile = -
+	changelogFile = CHANGELOG.md
+	releaseYAMLPath = .github/release.yml
+	postVersionCommand = python3 .github/scripts/update_citation_version.py
+	release = draft
