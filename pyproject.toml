@@ -43,7 +43,12 @@ optional-dependencies.dev = [
   "ipykernel",
   "prek",
   "setuptools-scm>=8.2",
+  "spinforge[docs]",
   "spinforge[testing]",
+]
+optional-dependencies.docs = [
+  "mkdocstrings-python>=2",
+  "zensical>=0.0.46",
 ]
 optional-dependencies.testing = [
   "pytest",

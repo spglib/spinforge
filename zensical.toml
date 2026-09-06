@@ -1,0 +1,143 @@
+[project]
+site_name = "SpinForge"
+site_description = "Group-theoretic magnetic structure generation in Python."
+site_author = "Kohei Shinohara"
+site_url = "https://spglib.github.io/spinforge/"
+copyright = "Copyright &copy; 2026, Kohei Shinohara"
+
+docs_dir = "docs"
+
+repo_url = "https://github.com/spglib/spinforge"
+repo_name = "spglib/spinforge"
+edit_uri = "edit/main/docs/"
+
+nav = [
+  { "Home" = "index.md" },
+  { "Learn SpinForge" = [
+    { "Installation" = "installation.md" },
+    { "Your first structure" = "quickstart.md" },
+    { "Examples" = "examples.md" },
+  ] },
+  { "Understand the model" = [
+    { "Domain model" = "domain-model.md" },
+    { "Classification model" = "classification-model.md" },
+  ] },
+  { "Complete a task" = [
+    { "Control enumeration" = "control-enumeration.md" },
+    { "Use propagation vectors" = "propagation-vectors.md" },
+    { "Export files" = "export-files.md" },
+  ] },
+  { "Technical reference" = [
+    { "Enumeration and equivalence" = "equivalence.md" },
+    { "File formats" = "file-formats.md" },
+  ] },
+  { "API reference" = [
+    { "Configuration" = "api/configuration.md" },
+    { "Space groups" = "api/space-group.md" },
+    { "Spin space groups" = "api/spin-space-group.md" },
+    { "Magnetic space groups" = "api/magnetic-space-group.md" },
+    { "spinCIF" = "api/spincif.md" },
+    { "MCIF" = "api/mcif.md" },
+    { "Irreducible representations" = "api/irreps.md" },
+  ] },
+  { "Project" = [
+    { "Citation" = "citation.md" },
+    { "Changelog" = "changelog.md" },
+    { "Third-party data" = "THIRD_PARTY_DATA.md" },
+  ] },
+]
+
+extra_javascript = [
+  "javascripts/mathjax.js",
+  "https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js",
+]
+extra_css = ["stylesheets/extra.css"]
+
+[project.theme]
+name = "material"
+language = "en"
+logo = "assets/logo-mark.svg"
+favicon = "assets/logo-mark.svg"
+features = [
+  "content.code.copy",
+  "content.code.annotate",
+  "navigation.footer",
+  "navigation.indexes",
+  "navigation.instant",
+  "navigation.sections",
+  "navigation.top",
+  "navigation.tracking",
+  "search.highlight",
+  "search.suggest",
+  "toc.follow",
+]
+
+[[project.theme.palette]]
+scheme = "default"
+primary = "deep purple"
+accent = "red"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+scheme = "slate"
+primary = "deep purple"
+accent = "red"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to light mode"
+
+[project.markdown_extensions.admonition]
+[project.markdown_extensions.attr_list]
+[project.markdown_extensions.def_list]
+[project.markdown_extensions.footnotes]
+[project.markdown_extensions.md_in_html]
+[project.markdown_extensions.toc]
+permalink = true
+[project.markdown_extensions.pymdownx.arithmatex]
+generic = true
+[project.markdown_extensions.pymdownx.details]
+[project.markdown_extensions.pymdownx.emoji]
+emoji_generator = "zensical.extensions.emoji.to_svg"
+emoji_index = "zensical.extensions.emoji.twemoji"
+[project.markdown_extensions.pymdownx.highlight]
+anchor_linenums = true
+line_spans = "__span"
+pygments_lang_class = true
+[project.markdown_extensions.pymdownx.inlinehilite]
+[project.markdown_extensions.pymdownx.magiclink]
+[project.markdown_extensions.pymdownx.smartsymbols]
+[project.markdown_extensions.pymdownx.snippets]
+base_path = ["."]
+check_paths = true
+[project.markdown_extensions.pymdownx.superfences]
+custom_fences = [
+  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
+]
+[project.markdown_extensions.pymdownx.tabbed]
+alternate_style = true
+[project.markdown_extensions.pymdownx.tasklist]
+custom_checkbox = true
+
+[project.plugins.mkdocstrings.handlers.python]
+paths = ["src"]
+inventories = [
+  "https://docs.python.org/3/objects.inv",
+  "https://numpy.org/doc/stable/objects.inv",
+  "https://pymatgen.org/objects.inv",
+]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+docstring_style = "numpy"
+docstring_section_style = "table"
+filters = ["!^_"]
+inherited_members = true
+merge_init_into_class = true
+separate_signature = true
+show_if_no_docstring = true
+show_root_full_path = false
+show_root_heading = true
+show_signature_annotations = true
+show_source = false
+show_symbol_type_heading = true
+show_symbol_type_toc = true
+signature_crossrefs = true
