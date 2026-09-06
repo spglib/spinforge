@@ -63,8 +63,10 @@
 }
 
 .md-typeset .paper-figure {
+  display: block;
   width: 100%;
-  height: min(72vh, 56rem);
+  height: auto;
+  margin: 1rem auto 1.25rem;
   border: 1px solid var(--md-default-fg-color--lightest);
   border-radius: 0.4rem;
 }
