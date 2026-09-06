@@ -29,10 +29,10 @@ dynamic = [
   "version",
 ]
 dependencies = [
+  "ase>=3.23",
   "hsnf>=0.3.16",
   "loguru>=0.7.3",
-  "moyopy[interface]>=0.16",
-  "pymatgen",
+  "moyopy>=0.16",
   "pymatgen-core>=2026.7.16",
   "scipy>=1.15.2",
   "spgrep>=0.7",
@@ -41,7 +41,6 @@ dependencies = [
 
 optional-dependencies.dev = [
   "ipykernel",
-  "pre-commit",
   "prek",
   "setuptools-scm>=8.2",
   "spinforge[testing]",
