@@ -30,6 +30,8 @@ nav = [
   { "Technical reference" = [
     { "Enumeration and equivalence" = "equivalence.md" },
     { "File formats" = "file-formats.md" },
+  ] },
+  { "API reference" = [
     { "Configuration" = "api/configuration.md" },
     { "Space groups" = "api/space-group.md" },
     { "Spin space groups" = "api/spin-space-group.md" },
