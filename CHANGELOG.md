@@ -15,3 +15,7 @@ The initial public release includes:
 - Paper examples for collinear MnTe, coplanar Mn3Sn, and noncoplanar CoTa3S6.
 - Public project, contribution, security, citation, and data-attribution
   documentation.
+
+## v1.0.0 - 2026/09/06
+
+- Initial public release

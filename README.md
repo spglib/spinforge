@@ -142,7 +142,7 @@ paper:
 > [doi:10.1103/8n3w-h2t1](https://doi.org/10.1103/8n3w-h2t1)
 
 ```bibtex
-@article{Nomoto2026SpinForge,
+@article{SpinForgePRX2026,
   author = {Nomoto, Takuya and Shinohara, Kohei and Watanabe, Hikaru and Arita, Ryotaro},
   title = {Systematic Magnetic Structure Generation Based on Oriented Spin Space Groups:
            Formulation, Applications, and High-Throughput First-Principles Calculations},
