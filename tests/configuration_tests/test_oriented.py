@@ -581,7 +581,6 @@ def test_Mn3IrSi_noncoplanar(output_dir: Path, Mn3SiIr_magnetic_site_indices: li
 
 
 def test_Yb2O3_noncoplanar(output_dir: Path, Yb2O3_magnetic_site_indices: list[int]):
-    # https://www.cryst.ehu.es/magndata/index.php?this_label=1.720
     # Multiple Wyckoff positions for Yb: 8a, 24d
     prim_cell = load_prim_Yb2O3()
     magnetic_site_indices = Yb2O3_magnetic_site_indices
