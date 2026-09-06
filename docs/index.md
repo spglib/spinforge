@@ -1,6 +1,5 @@
 ---
 hide:
-  - navigation
   - toc
 ---
 
@@ -24,7 +23,7 @@ You do not need to read the documentation from beginning to end. Each route
 below states its prerequisite, reading order, and destination. Follow one route
 until it meets your goal, then stop or branch to another.
 
-<div class="grid cards" markdown>
+<div class="grid cards route-grid" markdown>
 
 -   :material-compass-outline:{ .lg .middle } **Understand the model**
 
@@ -96,23 +95,3 @@ until it meets your goal, then stop or branch to another.
     surface you need.
 
 </div>
-
-## How the pieces fit
-
-``` mermaid
-flowchart LR
-    A[Primitive crystal] --> B[Family space subgroups]
-    B --> C[Spin space groups]
-    C --> D[SSA moment basis]
-    D --> E[Magnetic structure]
-    D --> F[Oriented descendants]
-    E --> G[spinCIF / MCIF]
-    F --> G
-```
-
-SpinForge keeps the stages explicit. This matters because family-subgroup
-conjugacy, spin-frame equivalence, and the orientation of spin relative to the
-lattice are different classification problems. Read the
-[Domain model](domain-model.md) for the objects in this workflow and the
-[Classification model](classification-model.md) for the relations between
-them.
