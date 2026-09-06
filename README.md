@@ -71,15 +71,15 @@ precise criteria and the options for larger searches.
 
 ## Examples
 
-The paper examples are provided as notebooks in [`examples/paper`](./examples/paper):
+The paper examples are provided as notebooks with the documentation:
 
-- [collinear MnTe](./examples/paper/collinear_MnTe)
-- [coplanar Mn3Sn](./examples/paper/coplanar_Mn3Sn)
-- [noncoplanar CoTa3S6](./examples/paper/noncoplanar_CoTa3S6)
+- [collinear MnTe](./docs/paper/collinear_MnTe.ipynb)
+- [coplanar Mn3Sn](./docs/paper/coplanar_Mn3Sn.ipynb)
+- [noncoplanar CoTa3S6](./docs/paper/noncoplanar_CoTa3S6.ipynb)
 
-These examples are published as-is. The paper figures, MAGNDATA-derived
-datasets, and the raw 283-material SDFT workflow are not part of this
-repository.
+These examples and their schematic figures are published as-is. The
+MAGNDATA-derived datasets and the raw 283-material SDFT workflow are not part
+of this repository.
 
 ## Release flow
 

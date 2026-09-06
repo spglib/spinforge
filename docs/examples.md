@@ -25,7 +25,7 @@ derivations, and physical interpretation.
     Uses `SpinOnlyGroupType.COLLINEAR` with `k_index=1`. Start here for the
     closest continuation of the quickstart.
 
-    [:octicons-arrow-right-24: Open notebook](https://github.com/spglib/spinforge/tree/main/examples/paper/collinear_MnTe)
+    [:octicons-arrow-right-24: Open notebook](https://github.com/spglib/spinforge/blob/main/docs/paper/collinear_MnTe.ipynb)
 
 -   **Coplanar Mn₃Sn**
 
@@ -35,7 +35,7 @@ derivations, and physical interpretation.
     enumeration with spin planochirality kept distinct or treated as
     equivalent.
 
-    [:octicons-arrow-right-24: Open notebook](https://github.com/spglib/spinforge/tree/main/examples/paper/coplanar_Mn3Sn)
+    [:octicons-arrow-right-24: Open notebook](https://github.com/spglib/spinforge/blob/main/docs/paper/coplanar_Mn3Sn.ipynb)
 
 -   **Noncoplanar CoTa₃S₆**
 
@@ -44,7 +44,7 @@ derivations, and physical interpretation.
     Uses `SpinOnlyGroupType.NONCOPLANAR` with `k_index=4`, demonstrating the
     same workflow with a larger invariant translation cell.
 
-    [:octicons-arrow-right-24: Open notebook](https://github.com/spglib/spinforge/tree/main/examples/paper/noncoplanar_CoTa3S6)
+    [:octicons-arrow-right-24: Open notebook](https://github.com/spglib/spinforge/blob/main/docs/paper/noncoplanar_CoTa3S6.ipynb)
 
 </div>
 
