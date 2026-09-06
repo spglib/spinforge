@@ -36,8 +36,9 @@ Please cite:
 ## MnTe structural model
 
 `src/spinforge/testing/assets/MnTe.cif` and
-`examples/paper/collinear_MnTe/MnTe.cif` are identical, locally serialized
-pymatgen CIFs for the NiAs-type MnTe structure. The lattice constants
+`examples/paper/collinear_MnTe/MnTe.cif` are identical to the documentation
+copy at `docs/paper/MnTe.cif`. They are locally serialized pymatgen CIFs for
+the NiAs-type MnTe structure. The lattice constants
 `a = b = 4.17349018 Å` and `c = 6.75345133 Å` follow the supplemental
 material to:
 
@@ -74,3 +75,27 @@ The SpinForge fixture is not a byte-for-byte COD or MAGNDATA record.
 within the SpinForge project. Repository history records no external database
 file as its source, so no third-party dataset license is asserted for this
 file.
+
+## Article example figures
+
+The following files under `docs/assets/paper/` are unmodified copies of source
+PDFs from the
+[`spglib/spinforge-paper`](https://github.com/spglib/spinforge-paper)
+repository:
+
+- `fig_example_collinear.pdf`
+- `fig_example_coplanar.pdf`
+- `fig_example_noncoplanar.pdf`
+
+The figures were created for:
+
+> T. Nomoto, K. Shinohara, H. Watanabe, and R. Arita,
+> “Systematic magnetic structure generation based on oriented spin space
+> groups: Formulation, applications, and high-throughput first-principles
+> calculations,” *Physical Review X* (accepted 2026).
+> [doi:10.1103/8n3w-h2t1](https://doi.org/10.1103/8n3w-h2t1)
+
+They are included with permission from the owner of the
+`spglib/spinforge-paper` repository, granted on September 6, 2026. This notice
+records that permission without asserting a Creative Commons license before
+the article's Version of Record is published.

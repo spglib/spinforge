@@ -48,6 +48,50 @@ derivations, and physical interpretation.
 
 </div>
 
-The notebooks are published as source examples. Consult the article for the
-complete discussion and results; MAGNDATA-derived datasets and the raw
-283-material SDFT workflow are outside this repository.
+## Schematic overview and notebooks
+
+The figures summarize the enumerated spin space groups and representative
+oriented structures. Use the notebooks for the corresponding software
+workflow, and the article for interpretation.
+
+=== "Collinear MnTe"
+
+    <object class="paper-figure" data="../assets/paper/fig_example_collinear.pdf" type="application/pdf">
+      <p>PDF preview unavailable. <a href="assets/paper/fig_example_collinear.pdf">Open the collinear MnTe schematic</a>.</p>
+    </object>
+
+    [Open schematic PDF](assets/paper/fig_example_collinear.pdf){ .md-button }
+    [Download notebook](paper/collinear_MnTe.ipynb){ .md-button }
+    [Download input CIF](paper/MnTe.cif){ .md-button }
+
+=== "Coplanar Mn₃Sn"
+
+    <object class="paper-figure" data="../assets/paper/fig_example_coplanar.pdf" type="application/pdf">
+      <p>PDF preview unavailable. <a href="assets/paper/fig_example_coplanar.pdf">Open the coplanar Mn₃Sn schematic</a>.</p>
+    </object>
+
+    [Open schematic PDF](assets/paper/fig_example_coplanar.pdf){ .md-button }
+    [Download notebook](paper/coplanar_Mn3Sn.ipynb){ .md-button }
+
+=== "Noncoplanar CoTa₃S₆"
+
+    <object class="paper-figure" data="../assets/paper/fig_example_noncoplanar.pdf" type="application/pdf">
+      <p>PDF preview unavailable. <a href="assets/paper/fig_example_noncoplanar.pdf">Open the noncoplanar CoTa₃S₆ schematic</a>.</p>
+    </object>
+
+    [Open schematic PDF](assets/paper/fig_example_noncoplanar.pdf){ .md-button }
+    [Download notebook](paper/noncoplanar_CoTa3S6.ipynb){ .md-button }
+
+!!! info "Figure permission and attribution"
+
+    Figures by Takuya Nomoto, Kohei Shinohara, Hikaru Watanabe, and Ryotaro
+    Arita for *Systematic Magnetic Structure Generation Based on Oriented Spin
+    Space Groups: Formulation, Applications, and High-Throughput
+    First-Principles Calculations* ([doi:10.1103/8n3w-h2t1](https://doi.org/10.1103/8n3w-h2t1)).
+    The original PDFs are reproduced without modification, with permission
+    from the owner of the
+    [`spglib/spinforge-paper`](https://github.com/spglib/spinforge-paper)
+    repository granted on September 6, 2026.
+
+Consult the article for the complete discussion and results. MAGNDATA-derived
+datasets and the raw 283-material SDFT workflow are outside this repository.

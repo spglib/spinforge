@@ -37,3 +37,10 @@
 .md-typeset table:not([class]) th {
   background: color-mix(in srgb, var(--md-primary-fg-color) 12%, transparent);
 }
+
+.md-typeset .paper-figure {
+  width: 100%;
+  height: min(72vh, 56rem);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.4rem;
+}
