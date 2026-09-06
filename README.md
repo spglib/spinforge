@@ -77,6 +77,30 @@ These examples are published as-is. The paper figures, MAGNDATA-derived
 datasets, and the raw 283-material SDFT workflow are not part of this
 repository.
 
+## Release flow
+
+Releases are prepared by [tagpr](https://github.com/Songmu/tagpr) and published
+by the `release` GitHub Actions workflow.
+
+1. Merge all changes for the release into `main`. Tagpr creates or updates the
+   `Release for vX.Y.Z` pull request from its `tagpr-from-v...` branch.
+2. Check out that pull request with `gh pr checkout <number>`, update its branch
+   directly with the final release changes (including `CHANGELOG.md`), and push
+   the commits to the same branch. Do not open another pull request for these
+   changes.
+3. If the proposed version needs to change, add the `tagpr:minor` or
+   `tagpr:major` label to the release pull request; without either label, tagpr
+   increments the patch version.
+4. Review the generated release notes and wait for the release pull request's
+   checks to pass, then merge it.
+5. The resulting push to `main` makes tagpr create the version tag. The release
+   workflow builds and verifies the wheel and source distribution, publishes
+   them to PyPI, and creates the GitHub Release with both artifacts attached.
+
+To rebuild an existing tag, run the `release` workflow manually with that tag.
+Set `publish` to false when the artifacts and GitHub Release should be rebuilt
+without publishing to PyPI.
+
 ## Project scope, compatibility, and support
 
 SpinForge provides symmetry enumeration, SSA and oriented-SSA structure
