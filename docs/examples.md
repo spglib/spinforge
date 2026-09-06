@@ -18,30 +18,26 @@ class and `k_index`, enumerate SSA structures, generate oriented descendants,
 and write spinCIF output. The article is the source for the formalism,
 derivations, and physical interpretation.
 
-## Schematic overview and notebooks
+## Schematic overview
 
 The figures summarize the enumerated spin space groups and representative
-oriented structures. Use the notebooks for the corresponding software
-workflow, and the article for interpretation.
+oriented structures. Follow each figure to its corresponding notebook for the
+software workflow, and use the article for interpretation.
 
 === "Collinear MnTe"
 
     ![Collinear MnTe spin-space-group and oriented-structure schematic](assets/paper/fig_example_collinear.png){ .paper-figure }
 
-    [Open schematic PDF](assets/paper/fig_example_collinear.pdf){ .md-button }
-    [Download notebook](paper/collinear_MnTe.ipynb){ .md-button }
-    [Download input CIF](paper/MnTe.cif){ .md-button }
+    Continue with the [collinear MnTe notebook](paper/collinear_MnTe.ipynb).
 
 === "Coplanar Mn₃Sn"
 
     ![Coplanar Mn₃Sn spin-space-group and oriented-structure schematic](assets/paper/fig_example_coplanar.png){ .paper-figure }
 
-    [Open schematic PDF](assets/paper/fig_example_coplanar.pdf){ .md-button }
-    [Download notebook](paper/coplanar_Mn3Sn.ipynb){ .md-button }
+    Continue with the [coplanar Mn₃Sn notebook](paper/coplanar_Mn3Sn.ipynb).
 
 === "Noncoplanar CoTa₃S₆"
 
     ![Noncoplanar CoTa₃S₆ spin-space-group and oriented-structure schematic](assets/paper/fig_example_noncoplanar.png){ .paper-figure }
 
-    [Open schematic PDF](assets/paper/fig_example_noncoplanar.pdf){ .md-button }
-    [Download notebook](paper/noncoplanar_CoTa3S6.ipynb){ .md-button }
+    Continue with the [noncoplanar CoTa₃S₆ notebook](paper/noncoplanar_CoTa3S6.ipynb).
