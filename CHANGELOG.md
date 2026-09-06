@@ -15,10 +15,3 @@ The initial public release includes:
 - Paper examples for collinear MnTe, coplanar Mn3Sn, and noncoplanar CoTa3S6.
 - Public project, contribution, security, citation, and data-attribution
   documentation.
-
-## [v1.0.0](https://github.com/spglib/spinforge/commits/v1.0.0) - 2026-09-06
-
-### Other changes
-- docs: prepare SpinForge for public release by @lan496 in https://github.com/spglib/spinforge/pull/1
-- fix: close Phase 4 packaging and data gaps by @lan496 in https://github.com/spglib/spinforge/pull/2
-- ci: add tagpr release and publishing workflow by @lan496 in https://github.com/spglib/spinforge/pull/3
