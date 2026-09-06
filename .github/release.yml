@@ -1,4 +1,7 @@
 changelog:
+  exclude:
+    labels:
+      - tagpr
   categories:
     - title: New features and enhancements
       labels:
