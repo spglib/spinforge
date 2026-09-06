@@ -2,13 +2,14 @@
 
 !!! abstract "Page contract"
 
-    **Starting point:** One or more commensurate propagation vectors and the
-    magnetic sites are known in the input structure's setting. **Destination:**
-    Your `SSAGenerator` uses their common translation lattice as its bound.
-    **Next:** Enumerate and orient candidates as in
-    [Your first structure](quickstart.md). **Skip:** When no propagation vector
-    is known, choose `k_index` in
-    [Control an enumeration](control-enumeration.md) instead.
+    - **Starting point:** One or more commensurate propagation vectors and the
+      magnetic sites are known in the input structure's setting.
+    - **Destination:** Your `SSAGenerator` uses their common translation lattice
+      as its bound.
+    - **Next:** Enumerate and orient candidates as in
+      [Your first structure](quickstart.md).
+    - **Skip:** When no propagation vector is known, choose `k_index` in
+      [Control an enumeration](control-enumeration.md) instead.
 
 ## Construct the generator in the input frame
 

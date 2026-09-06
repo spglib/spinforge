@@ -3,13 +3,17 @@
 This is the exact technical reference for the enumeration bounds and
 equivalence relations implemented by SpinForge.
 
-| | Page contract |
-|---|---|
-| **Audience** | Readers interpreting candidate counts or implementing against the enumeration APIs |
-| **Prerequisite** | The objects and stages in the [domain model](domain-model.md) |
-| **Outcome** | You can state which group action identifies each class and what each search control retains |
-| **Next** | Check exact signatures in the [configuration API](api/configuration.md) |
-| **Skip this page if** | You only need to run the default workflow; use [your first structure](quickstart.md) instead |
+!!! abstract "Page contract"
+
+    - **Starting point:** You understand the objects and stages in the
+      [domain model](domain-model.md) and need to interpret candidate counts or
+      implement against the enumeration APIs.
+    - **Destination:** You can state which group action identifies each class
+      and what each search control retains.
+    - **Next:** Check exact signatures in the
+      [configuration API](api/configuration.md).
+    - **Skip:** You only need to run the default workflow; use
+      [Your first structure](quickstart.md) instead.
 
 The [SpinForge article](https://doi.org/10.1103/8n3w-h2t1) remains the
 authoritative source for derivations and the broader scientific treatment.

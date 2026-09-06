@@ -2,12 +2,13 @@
 
 !!! abstract "Page contract"
 
-    **Starting point:** You can construct an `SSAGenerator` and run the
-    quickstart search. **Destination:** You can choose the five search controls
-    deliberately. **Next:** Check the implemented relations in
-    [Enumeration and equivalence](equivalence.md) when candidate counts need
-    explanation. **Skip:** The quickstart settings already cover your
-    calculation.
+    - **Starting point:** You can construct an `SSAGenerator` and run the
+      quickstart search.
+    - **Destination:** You can choose the five search controls deliberately.
+    - **Next:** Check the implemented relations in
+      [Enumeration and equivalence](equivalence.md) when candidate counts need
+      explanation.
+    - **Skip:** The quickstart settings already cover your calculation.
 
 ## Start with the smallest relevant search
 

@@ -2,12 +2,14 @@
 
 !!! abstract "Page contract"
 
-    **Starting point:** You have completed [Your first structure](quickstart.md)
-    and want to map that workflow to a physical example. **Destination:** You
-    can choose the notebook whose spin-only-group class and translation bound
-    match your task. **Next:** Open that notebook and use the article for its
-    scientific interpretation. **Skip:** This page if you only need an exact
-    API signature.
+    - **Starting point:** You have completed
+      [Your first structure](quickstart.md) and want to map that workflow to a
+      physical example.
+    - **Destination:** You can choose the notebook whose spin-only-group class
+      and translation bound match your task.
+    - **Next:** Open that notebook and use the article for its scientific
+      interpretation.
+    - **Skip:** This page if you only need an exact API signature.
 
 The repository contains the notebooks used for three representative examples
 in the [SpinForge article](https://doi.org/10.1103/8n3w-h2t1). Each follows the

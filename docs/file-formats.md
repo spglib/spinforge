@@ -2,11 +2,13 @@
 
 !!! abstract "Page contract"
 
-    **Starting point:** You have an oriented magnetic structure but have not
-    chosen a file representation. **Destination:** You know which format
-    preserves the object needed by the next tool. **Next:** Write and check it
-    with [Export result files](export-files.md). **Skip:** If the workflow
-    remains entirely in Python.
+    - **Starting point:** You have an oriented magnetic structure but have not
+      chosen a file representation.
+    - **Destination:** You know which format preserves the object needed by the
+      next tool.
+    - **Next:** Write and check it with
+      [Export result files](export-files.md).
+    - **Skip:** If the workflow remains entirely in Python.
 
 | Choose | When you need to preserve | SpinForge interface |
 |---|---|---|

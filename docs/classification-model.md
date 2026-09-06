@@ -2,14 +2,15 @@
 
 !!! abstract "Page contract"
 
-    **Starting point:** You understand the objects in the
-    [domain model](domain-model.md) but not which distinctions SpinForge
-    preserves. **Destination:** You can identify which setting changes the
-    search space, an equivalence relation, or only the orientation of a result.
-    **Next:** Apply those distinctions in
-    [Control an enumeration](control-enumeration.md). **Skip:** Use the
-    [exact reference](equivalence.md) directly when the conceptual distinctions
-    are already familiar.
+    - **Starting point:** You understand the objects in the
+      [domain model](domain-model.md) but not which distinctions SpinForge
+      preserves.
+    - **Destination:** You can identify which setting changes the search space,
+      an equivalence relation, or only the orientation of a result.
+    - **Next:** Apply those distinctions in
+      [Control an enumeration](control-enumeration.md).
+    - **Skip:** Use the [exact reference](equivalence.md) directly when the
+      conceptual distinctions are already familiar.
 
 The [SpinForge article](https://doi.org/10.1103/8n3w-h2t1) is the authoritative
 source for the underlying theory and derivations. This page only maps those

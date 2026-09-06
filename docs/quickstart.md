@@ -5,11 +5,12 @@ MnTe and then generates their oriented descendants.
 
 !!! abstract "Page contract"
 
-    **Starting point:** SpinForge is [installed](installation.md), and you can
-    identify a primitive crystal cell and its magnetic sites. **Destination:**
-    You can run one bounded enumeration and inspect its oriented structures.
-    **Skip:** The formal derivation and physical interpretation; those belong
-    to the [associated article](https://doi.org/10.1103/8n3w-h2t1).
+    - **Starting point:** SpinForge is [installed](installation.md), and you can
+      identify a primitive crystal cell and its magnetic sites.
+    - **Destination:** You can run one bounded enumeration and inspect its
+      oriented structures.
+    - **Skip:** The formal derivation and physical interpretation; those belong
+      to the [associated article](https://doi.org/10.1103/8n3w-h2t1).
 
 ## 1. Prepare a primitive cell
 

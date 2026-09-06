@@ -2,13 +2,15 @@
 
 !!! abstract "Page contract"
 
-    **Starting point:** You have the five objects returned by enumeration and
-    orientation: `spin_only_group`, `spin_space_group`, `adapted`,
-    `magnetic_structure`, and `magnetic_space_subgroup`. **Destination:** You
-    have a spinCIF, an MCIF, or both, plus a basic parse check. **Next:** Apply
-    your downstream calculation's checks to the parsed structure. **Skip:** If
-    the workflow remains entirely in Python. If the format is undecided, read
-    [Choose an output format](file-formats.md) first.
+    - **Starting point:** You have the five objects returned by enumeration and
+      orientation: `spin_only_group`, `spin_space_group`, `adapted`,
+      `magnetic_structure`, and `magnetic_space_subgroup`.
+    - **Destination:** You have a spinCIF, an MCIF, or both, plus a basic parse
+      check.
+    - **Next:** Apply your downstream calculation's checks to the parsed
+      structure.
+    - **Skip:** If the workflow remains entirely in Python. If the format is
+      undecided, read [Choose an output format](file-formats.md) first.
 
 ## Write spinCIF
 
