@@ -11,6 +11,29 @@ concurrency:
 permissions: {}
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            code:
+              - '.github/workflows/ci.yaml'
+              - 'src/**'
+              - 'tests/**'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - '.test_durations'
+
   pre-commit:
     runs-on: ubuntu-latest
     permissions:
@@ -29,6 +52,8 @@ jobs:
           SKIP: uv-lock
 
   tests:
+    needs: changes
+    if: ${{ needs.changes.outputs.code == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -53,10 +78,16 @@ jobs:
 
   ci:
     if: always()
-    needs: [pre-commit, tests]
+    needs: [changes, pre-commit, tests]
     runs-on: ubuntu-latest
     steps:
+      # tests is skipped when no code paths changed, which must still pass the
+      # branch ruleset's required `ci` check.
       - name: Check required jobs
         run: |
+          test "${{ needs.changes.result }}" = success
           test "${{ needs.pre-commit.result }}" = success
-          test "${{ needs.tests.result }}" = success
+          case "${{ needs.tests.result }}" in
+            success | skipped) ;;
+            *) exit 1 ;;
+          esac
