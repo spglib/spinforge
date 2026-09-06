@@ -13,14 +13,14 @@ edit_uri = "edit/main/docs/"
 
 nav = [
   { "Home" = "index.md" },
-  { "Understand the model" = [
-    { "Domain model" = "domain-model.md" },
-    { "Classification model" = "classification-model.md" },
-  ] },
   { "Learn SpinForge" = [
     { "Installation" = "installation.md" },
     { "Your first structure" = "quickstart.md" },
     { "Examples" = "examples.md" },
+  ] },
+  { "Understand the model" = [
+    { "Domain model" = "domain-model.md" },
+    { "Classification model" = "classification-model.md" },
   ] },
   { "Complete a task" = [
     { "Control enumeration" = "control-enumeration.md" },
