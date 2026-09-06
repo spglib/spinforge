@@ -11,6 +11,8 @@
     "platformAutomerge": true
   },
 
+  "separateMultipleMajor": true,
+
   "minimumReleaseAge": "7d",
   "configMigration": true,
 
@@ -25,6 +27,12 @@
   "enabledManagers": ["github-actions", "pep621", "pre-commit"],
 
   "packageRules": [
+    {
+      "description": "Automerge patch updates",
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "platformAutomerge": true
+    },
     {
       "matchDepNames": ["python"],
       "enabled": false
