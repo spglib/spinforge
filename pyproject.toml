@@ -64,8 +64,6 @@ dev = [ "spinforge[dev]" ]
 
 [tool.setuptools_scm]
 
-[tool.uv]
-
 [tool.ruff]
 line-length = 99
 extend-exclude = [ "docs" ]
