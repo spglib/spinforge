@@ -7,6 +7,10 @@
 SpinForge is a group-theoretic generator for spin-symmetry-adapted (SSA) and
 oriented magnetic crystal structures based on spin space groups.
 
+[Documentation](https://spglib.github.io/spinforge/) ·
+[PyPI](https://pypi.org/project/spinforge/) ·
+[Issue tracker](https://github.com/spglib/spinforge/issues)
+
 ## Installation
 
 SpinForge supports Python 3.11 and later.
