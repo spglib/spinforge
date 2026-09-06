@@ -7,45 +7,97 @@ hide:
 # Forge magnetic structures from symmetry
 
 SpinForge generates spin-symmetry-adapted and oriented magnetic crystal
-structures from crystallographic symmetry. It gives you a group-theoretic
-route from a primitive nonmagnetic structure to candidate magnetic structures
-that can be inspected, exported, or used in downstream calculations.
+structures from crystallographic symmetry. Use this page to choose a route
+based on what you already know and what you need to do.
 
-[Get started](installation.md){ .md-button .md-button--primary }
-[Explore the API](api/configuration.md){ .md-button }
+[Choose a route](#choose-your-route){ .md-button .md-button--primary }
+[Install SpinForge](installation.md){ .md-button }
+
+!!! note "Project scope"
+
+    SpinForge generates symmetry-compatible candidates. It does not determine
+    or refine a magnetic structure from experimental or first-principles data.
+
+## Choose your route
+
+You do not need to read the documentation from beginning to end. Each route
+below states its prerequisite, reading order, and destination. Follow one route
+until it meets your goal, then stop or branch to another.
 
 <div class="grid cards" markdown>
 
--   :material-axis-arrow:{ .lg .middle } **Symmetry first**
+-   :material-compass-outline:{ .lg .middle } **Understand the model**
 
     ---
 
-    Enumerate collinear, coplanar, and noncoplanar structures from spin space
-    groups instead of guessing moment patterns.
+    **Start here if:** SpinForge's domain vocabulary or representation of a
+    magnetic structure is new to you.
 
--   :material-tune-variant:{ .lg .middle } **Controlled searches**
+    **Read:** [Domain model](domain-model.md) →
+    [Classification model](classification-model.md)
 
-    ---
+    **You will be able to:** explain what SpinForge represents, which stages it
+    distinguishes, and why different equivalence relations produce different
+    candidate sets.
 
-    Bound supercells by translation index or propagation vectors and choose
-    exactly which spatial equivalences to retain.
+    **You can skip:** installation, tutorials, and API details if you only need
+    the conceptual model.
 
--   :material-rotate-3d-variant:{ .lg .middle } **Oriented descendants**
-
-    ---
-
-    Turn an SSA structure into maximal magnetic-space-subgroup descendants
-    with spin directions oriented relative to the crystal lattice.
-
--   :material-file-export-outline:{ .lg .middle } **Interoperable output**
+-   :material-school-outline:{ .lg .middle } **Learn SpinForge**
 
     ---
 
-    Work with pymatgen structures and export symmetrized spinCIF or MCIF files.
+    **Start here if:** you know the magnetic-crystallography concepts and are
+    new to the package.
+
+    **Read:** [Installation](installation.md) →
+    [Your first structure](quickstart.md) → [Examples](examples.md)
+
+    **You will be able to:** install SpinForge, enumerate a first set of
+    candidates, and inspect the result.
+
+    **You can skip:** the conceptual route when its terminology is already
+    familiar. Return to the classification model if a result count or grouping
+    is unexpected.
+
+-   :material-tools:{ .lg .middle } **Complete a task**
+
+    ---
+
+    **Start here if:** SpinForge is installed and you can already run a basic
+    enumeration.
+
+    **Go directly to:** [Control enumeration](control-enumeration.md),
+    [Use propagation vectors](propagation-vectors.md), or
+    [Export files](export-files.md).
+
+    **You will be able to:** change the search and equivalence settings or
+    write the selected candidates for downstream use.
+
+    **You can skip:** the tutorial and unrelated task guides.
+
+-   :material-code-braces:{ .lg .middle } **Check exact behavior**
+
+    ---
+
+    **Start here if:** you are implementing against SpinForge or verifying an
+    exact contract.
+
+    **Go directly to:** [Enumeration and equivalence](equivalence.md),
+    [File formats](file-formats.md), or the relevant
+    [API reference](api/configuration.md). Consult the
+    [Classification model](classification-model.md) when the meaning of a
+    returned object or equivalence relation matters.
+
+    **You will be able to:** confirm signatures, return types, object
+    relationships, and classification semantics.
+
+    **You can skip:** tutorials and task guides when you already know which API
+    surface you need.
 
 </div>
 
-## The workflow
+## How the pieces fit
 
 ``` mermaid
 flowchart LR
@@ -60,32 +112,7 @@ flowchart LR
 
 SpinForge keeps the stages explicit. This matters because family-subgroup
 conjugacy, spin-frame equivalence, and the orientation of spin relative to the
-lattice are different classification problems. The
-[enumeration and equivalence guide](equivalence.md) defines each relation.
-
-## At a glance
-
-```python
-from spinforge.configuration import SSAGenerator
-from spinspg.spin import SpinOnlyGroupType
-
-generator = SSAGenerator(
-    prim_cell=primitive_cell,
-    magnetic_site_indices=[0, 1],
-)
-
-candidates = generator.enumerate(
-    spin_only_group_type=SpinOnlyGroupType.COLLINEAR,
-    k_index=1,
-    max_depth=0,
-)
-```
-
-The result is a list of `(spin_only_group, spin_space_group, adapted_structure)`
-tuples. Continue with [your first structure](quickstart.md) for a complete
-example and the assumptions behind it.
-
-!!! note "Project scope"
-
-    SpinForge generates symmetry-compatible candidates. It does not determine
-    or refine a magnetic structure from experimental or first-principles data.
+lattice are different classification problems. Read the
+[Domain model](domain-model.md) for the objects in this workflow and the
+[Classification model](classification-model.md) for the relations between
+them.

@@ -2,6 +2,14 @@
 
 SpinForge supports Python 3.11 and later.
 
+!!! abstract "Page contract"
+
+    **Starting point:** You have Python 3.11 or later and can run commands in a
+    terminal. **Destination:** SpinForge imports successfully and you are ready
+    to run an example. **Next:** Follow
+    [Your first structure](quickstart.md). **Skip:** The source and documentation
+    sections if you only need the released Python package.
+
 ## From PyPI
 
 Create an isolated environment, then install the package:
@@ -26,6 +34,8 @@ Confirm that the installation is importable:
 ```shell
 python -c "import spinforge; print('SpinForge is ready')"
 ```
+
+Continue with [Your first structure](quickstart.md).
 
 ## From a source checkout
 

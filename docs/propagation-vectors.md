@@ -1,14 +1,24 @@
-# Propagation vectors
+# Constrain an enumeration with propagation vectors
 
-Use [`SSAGenerator.with_propagation_vectors()`][spinforge.configuration.SSAGenerator.with_propagation_vectors]
-when one or more commensurate propagation vectors are known. SpinForge derives
-their common invariant translation lattice and uses it as the enumeration
-bound.
+!!! abstract "Page contract"
+
+    **Starting point:** One or more commensurate propagation vectors and the
+    magnetic sites are known in the input structure's setting. **Destination:**
+    Your `SSAGenerator` uses their common translation lattice as its bound.
+    **Next:** Enumerate and orient candidates as in
+    [Your first structure](quickstart.md). **Skip:** When no propagation vector
+    is known, choose `k_index` in
+    [Control an enumeration](control-enumeration.md) instead.
+
+## Construct the generator in the input frame
+
+For vectors reported with an experimental CIF, keep the structure and vectors
+in that CIF's setting and use `k_frame="input"`:
 
 ```python
 import numpy as np
-from pymatgen.core import Structure
 from moyopy import Cell
+from pymatgen.core import Structure
 from spinforge.configuration import SSAGenerator
 from spinspg.spin import SpinOnlyGroupType
 
@@ -18,11 +28,16 @@ cell = Cell(
     positions=structure.frac_coords.tolist(),
     numbers=list(structure.atomic_numbers),
 )
+magnetic_site_indices = [
+    index
+    for index, atomic_number in enumerate(cell.numbers)
+    if atomic_number == 25
+]
 
 generator = SSAGenerator.with_propagation_vectors(
     cell=cell,
     propagation_vectors=[np.array([0.0, 0.0, 0.5])],
-    magnetic_site_indices=[0],
+    magnetic_site_indices=magnetic_site_indices,
     k_frame="input",
 )
 
@@ -31,32 +46,34 @@ candidates = generator.enumerate(
 )
 ```
 
-## Choose the coordinate frame explicitly
+Replace the atomic-number selection with the magnetic species or sites in your
+system. Site indices must refer to the exact `cell` passed to
+`with_propagation_vectors()`.
 
-`k_frame="input"` means the fractional reciprocal coordinates use the setting
-of the supplied cell. This is the safest choice for vectors reported alongside
-an experimental CIF. SpinForge transforms both the cell and the vectors into
-moyopy's primitive standardized setting.
+SpinForge standardizes the cell, transforms the vectors to its primitive
+standardized setting, and logs each vector in both frames. It derives the
+translation index automatically. Do not pass a different `k_index` to
+`enumerate()`; an explicit value must equal the derived index.
 
-Use `k_frame="prim_std"` only when the vectors already use that standardized
-setting. The constructor logs the accepted vectors in both frames so that axis
-permutations and setting mismatches are visible.
+## Use the standardized frame only when it is already known
 
-## Translation index
+Set `k_frame="prim_std"` only when the supplied vectors are already expressed
+in moyopy's primitive standardized setting. They are then used as-is.
 
-The propagation vectors determine a commensurate lattice
+## Diagnose an empty result
 
-$$
-L = \{t \in T \mid k_i \cdot t \in \mathbb{Z}\text{ for every }k_i\}.
-$$
+If enumeration returns no candidates:
 
-Its index is supplied automatically during enumeration. If you also pass
-`k_index`, it must equal that derived index.
+1. Compare the input and standardized vectors in the construction log. A
+   surprising permutation or value usually indicates that the vector and cell
+   came from different settings.
+2. Confirm that the chosen spin-only-group type can realize the translation
+   quotient. For example, a collinear spin-only group can realize only the
+   identity and spin-flip quotient.
+3. Try `COPLANAR` or `NONCOPLANAR` only if that moment geometry is physically
+   part of the intended search.
 
-!!! tip "When enumeration returns no candidates"
-
-    First check the transformed vectors in the log. If the frames agree, the
-    empty result may be physically meaningful: the translation quotient may
-    not be realizable by the selected spin-only-group type. Try a compatible
-    coplanar or noncoplanar type only when it matches the problem you intend to
-    model.
+The translation lattice is the common commensurate lattice of the supplied
+vectors. For its derivation and the surrounding classification, see the
+[SpinForge article](https://doi.org/10.1103/8n3w-h2t1); the operational API
+details are in [`SSAGenerator.with_propagation_vectors()`][spinforge.configuration.SSAGenerator.with_propagation_vectors].

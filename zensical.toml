@@ -13,17 +13,23 @@ edit_uri = "edit/main/docs/"
 
 nav = [
   { "Home" = "index.md" },
-  { "Get started" = [
+  { "Understand the model" = [
+    { "Domain model" = "domain-model.md" },
+    { "Classification model" = "classification-model.md" },
+  ] },
+  { "Learn SpinForge" = [
     { "Installation" = "installation.md" },
     { "Your first structure" = "quickstart.md" },
-    { "Propagation vectors" = "propagation-vectors.md" },
-  ] },
-  { "Guides" = [
-    { "Enumeration and equivalence" = "equivalence.md" },
-    { "File formats" = "file-formats.md" },
     { "Examples" = "examples.md" },
   ] },
-  { "API reference" = [
+  { "Complete a task" = [
+    { "Control enumeration" = "control-enumeration.md" },
+    { "Use propagation vectors" = "propagation-vectors.md" },
+    { "Export files" = "export-files.md" },
+  ] },
+  { "Technical reference" = [
+    { "Enumeration and equivalence" = "equivalence.md" },
+    { "File formats" = "file-formats.md" },
     { "Configuration" = "api/configuration.md" },
     { "Space groups" = "api/space-group.md" },
     { "Spin space groups" = "api/spin-space-group.md" },

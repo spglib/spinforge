@@ -3,6 +3,14 @@
 This walkthrough enumerates collinear spin-symmetry-adapted structures for
 MnTe and then generates their oriented descendants.
 
+!!! abstract "Page contract"
+
+    **Starting point:** SpinForge is [installed](installation.md), and you can
+    identify a primitive crystal cell and its magnetic sites. **Destination:**
+    You can run one bounded enumeration and inspect its oriented structures.
+    **Skip:** The formal derivation and physical interpretation; those belong
+    to the [associated article](https://doi.org/10.1103/8n3w-h2t1).
+
 ## 1. Prepare a primitive cell
 
 SpinForge accepts a
@@ -11,15 +19,11 @@ SpinForge accepts a
 primitive.
 
 ```python
-from moyopy import Cell
+from moyopy.interface import MoyoAdapter
 from pymatgen.core import Structure
 
 structure = Structure.from_file("MnTe.cif")
-primitive_cell = Cell(
-    basis=structure.lattice.matrix.tolist(),
-    positions=structure.frac_coords.tolist(),
-    numbers=list(structure.atomic_numbers),
-)
+primitive_cell = MoyoAdapter.from_structure(structure)
 ```
 
 Select the magnetic sites by their indices in that cell. Here manganese has
@@ -90,25 +94,11 @@ contains Cartesian moment vectors. By default, coplanar enantiomorphs are kept
 distinct. Pass `preserve_spin_planochirality=False` to identify structures
 related by improper spin-frame transformations.
 
-## 4. Make sampling reproducible
-
-When the adapted moment space has dimension greater than one, `generate()` and
-`generate_oriented()` sample coefficients. Pass a NumPy generator when you
-need repeatable output:
-
-```python
-import numpy as np
-
-rng = np.random.default_rng(42)
-structure = adapted.generate(rng=rng)
-```
-
-The symmetry-adapted subspace is deterministic; the sampled point within that
-subspace is what the random generator controls.
-
 ## Next steps
 
+- Compare the three supported spin-only-group workflows in
+  [Examples](examples.md).
 - Use measured or calculated propagation vectors to constrain the translation
   lattice in the [propagation-vector guide](propagation-vectors.md).
-- Read [enumeration and equivalence](equivalence.md) before expanding a search.
-- Export a result using the [file-format guide](file-formats.md).
+- Read [Control enumeration](control-enumeration.md) before expanding a search.
+- Export a result with [Export files](export-files.md).
