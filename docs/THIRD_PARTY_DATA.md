@@ -78,10 +78,8 @@ file.
 
 ## Article example figures
 
-The following PNG renderings under `docs/assets/paper/` were converted from
-source PDFs in the
-[`spglib/spinforge-paper`](https://github.com/spglib/spinforge-paper)
-repository:
+The following PNG schematics under `docs/assets/paper/` illustrate examples
+from the associated article:
 
 - `fig_example_collinear.png`
 - `fig_example_coplanar.png`
@@ -95,7 +93,6 @@ The figures were created for:
 > calculations,” *Physical Review X* (accepted 2026).
 > [doi:10.1103/8n3w-h2t1](https://doi.org/10.1103/8n3w-h2t1)
 
-They are included with permission from the owner of the
-`spglib/spinforge-paper` repository, granted on September 6, 2026. This notice
-records that permission without asserting a Creative Commons license before
-the article's Version of Record is published.
+They are included with permission from their copyright holder, granted on
+September 6, 2026. This notice records that permission without asserting a
+Creative Commons license before the article's Version of Record is published.
