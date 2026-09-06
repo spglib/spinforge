@@ -2,12 +2,14 @@
 
 !!! abstract "Page contract"
 
-    **Starting point:** You can recognize a magnetic structure but are new to
-    SpinForge's vocabulary. **Destination:** You can follow an enumeration
-    result from its crystallographic input to an oriented magnetic structure.
-    **Next:** Learn which distinctions affect a candidate set in the
-    [classification model](classification-model.md). **Skip:** This page when
-    SpinForge's objects and workflow stages are already familiar.
+    - **Starting point:** You can recognize a magnetic structure but are new to
+      SpinForge's vocabulary.
+    - **Destination:** You can follow an enumeration result from its
+      crystallographic input to an oriented magnetic structure.
+    - **Next:** Learn which distinctions affect a candidate set in the
+      [classification model](classification-model.md).
+    - **Skip:** This page when SpinForge's objects and workflow stages are
+      already familiar.
 
 For derivations and the full scientific treatment, see the
 [SpinForge article](https://doi.org/10.1103/8n3w-h2t1).
@@ -15,7 +17,7 @@ For derivations and the full scientific treatment, see the
 ## One workflow, several distinct objects
 
 ``` mermaid
-flowchart LR
+flowchart TB
     A[Primitive cell<br/>and magnetic sites]
     B[Family space subgroup]
     C[Spin space group<br/>and spin-only group]
@@ -77,10 +79,10 @@ crystallographic axes. Each result pairs a pymatgen `Structure`, with Cartesian
 moments in its `magmom` site property, with a
 [`MagneticSpaceSubgroup`][spinforge.msg.MagneticSpaceSubgroup].
 
-## What to read next
+!!! tip "What to read next"
 
-- Read the [classification model](classification-model.md) to choose the
-  boundary and equivalence controls that change a candidate set.
-- Follow [your first structure](quickstart.md) to run this workflow.
-- Use the [configuration API](api/configuration.md) when you need exact
-  signatures and return types.
+    - Read the [classification model](classification-model.md) to choose the
+      boundary and equivalence controls that change a candidate set.
+    - Follow [your first structure](quickstart.md) to run this workflow.
+    - Use the [configuration API](api/configuration.md) when you need exact
+      signatures and return types.
