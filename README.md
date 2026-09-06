@@ -11,34 +11,9 @@ oriented magnetic crystal structures based on spin space groups.
 [PyPI](https://pypi.org/project/spinforge/) ·
 [Issue tracker](https://github.com/spglib/spinforge/issues)
 
-## Installation
-
-SpinForge supports Python 3.11 and later.
-
-```shell
-python -m pip install spinforge
-```
-
-For a source checkout and contributor setup, see
-[CONTRIBUTING.md](./CONTRIBUTING.md).
-
-## Getting started
-
-Follow [Your first structure](./docs/quickstart.md) for the maintained
-walkthrough, or use the [documentation home](https://spglib.github.io/spinforge/)
-to choose a route by prerequisite and goal.
-
-## Examples
-
-The paper examples are provided as notebooks with the documentation:
-
-- [collinear MnTe](./docs/paper/collinear_MnTe.ipynb)
-- [coplanar Mn3Sn](./docs/paper/coplanar_Mn3Sn.ipynb)
-- [noncoplanar CoTa3S6](./docs/paper/noncoplanar_CoTa3S6.ipynb)
-
-These examples and their schematic figures are published as-is. The
-MAGNDATA-derived datasets and the raw 283-material SDFT workflow are not part
-of this repository.
+Installation, tutorials, examples, citation guidance, and API references are
+maintained in the [documentation](https://spglib.github.io/spinforge/). For a
+source checkout and contributor setup, see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Release flow
 
@@ -91,30 +66,6 @@ Please use
 [GitHub Issues](https://github.com/spglib/spinforge/issues) for reproducible
 bugs and in-scope feature requests. Security reports follow
 [SECURITY.md](./SECURITY.md).
-
-## Citation
-
-If SpinForge contributes to published work, cite the software metadata in
-[`CITATION.cff`](./CITATION.cff) and the associated oriented-spin-space-group
-paper:
-
-> T. Nomoto, K. Shinohara, H. Watanabe, and R. Arita,
-> “Systematic magnetic structure generation based on oriented spin space
-> groups: Formulation, applications, and high-throughput first-principles
-> calculations,” *Physical Review X* (accepted 2026).
-> [doi:10.1103/8n3w-h2t1](https://doi.org/10.1103/8n3w-h2t1)
-
-```bibtex
-@article{SpinForgePRX2026,
-  author = {Nomoto, Takuya and Shinohara, Kohei and Watanabe, Hikaru and Arita, Ryotaro},
-  title = {Systematic Magnetic Structure Generation Based on Oriented Spin Space Groups:
-           Formulation, Applications, and High-Throughput First-Principles Calculations},
-  journal = {Physical Review X},
-  year = {2026},
-  doi = {10.1103/8n3w-h2t1},
-  note = {Accepted}
-}
-```
 
 ## Data attribution and license
 
