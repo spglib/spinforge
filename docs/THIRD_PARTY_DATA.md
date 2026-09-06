@@ -78,14 +78,14 @@ file.
 
 ## Article example figures
 
-The following files under `docs/assets/paper/` are unmodified copies of source
-PDFs from the
+The following PNG renderings under `docs/assets/paper/` were converted from
+source PDFs in the
 [`spglib/spinforge-paper`](https://github.com/spglib/spinforge-paper)
 repository:
 
-- `fig_example_collinear.pdf`
-- `fig_example_coplanar.pdf`
-- `fig_example_noncoplanar.pdf`
+- `fig_example_collinear.png`
+- `fig_example_coplanar.png`
+- `fig_example_noncoplanar.png`
 
 The figures were created for:
 
