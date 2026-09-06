@@ -22,52 +22,11 @@ python -m pip install spinforge
 For a source checkout and contributor setup, see
 [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-## Quickstart: oriented magnetic structures
+## Getting started
 
-Given a primitive crystal structure in `MnTe.cif`, this example enumerates
-collinear SSA candidates with propagation-vector index one and generates every
-maximal oriented descendant:
-
-```python
-from moyopy import Cell
-from pymatgen.core import Structure
-from spinspg.spin import SpinOnlyGroupType
-
-from spinforge.configuration import SSAGenerator
-
-structure = Structure.from_file("MnTe.cif")
-prim_cell = Cell(
-    basis=structure.lattice.matrix.tolist(),
-    positions=structure.frac_coords.tolist(),
-    numbers=list(structure.atomic_numbers),
-)
-magnetic_site_indices = [
-    index for index, atomic_number in enumerate(prim_cell.numbers) if atomic_number == 25
-]
-
-generator = SSAGenerator(
-    prim_cell=prim_cell,
-    magnetic_site_indices=magnetic_site_indices,
-)
-
-for spin_only_group, spin_space_group, adapted_structure in generator.enumerate(
-    spin_only_group_type=SpinOnlyGroupType.COLLINEAR,
-    k_index=1,
-    max_depth=0,
-):
-    oriented_structures = generator.generate_oriented(
-        adapted_structure,
-        spin_only_group=spin_only_group,
-        nontrivial_spin_space_group=spin_space_group,
-    )
-    for magnetic_structure, magnetic_space_subgroup in oriented_structures:
-        print(magnetic_structure.formula, magnetic_space_subgroup.msg_type)
-```
-
-`SSAGenerator` requires a primitive input cell. The family-subgroup,
-spin-space-group, and oriented spin-frame equivalence controls are separate.
-See the [enumeration and equivalence guide](./docs/equivalence.md) for the
-precise criteria and the options for larger searches.
+Follow [Your first structure](./docs/quickstart.md) for the maintained
+walkthrough, or use the [documentation home](https://spglib.github.io/spinforge/)
+to choose a route by prerequisite and goal.
 
 ## Examples
 
