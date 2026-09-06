@@ -28,16 +28,16 @@ software workflow, and use the article for interpretation.
 
     ![Collinear MnTe spin-space-group and oriented-structure schematic](assets/paper/fig_example_collinear.png){ .paper-figure }
 
-    Continue with the [collinear MnTe notebook](paper/collinear_MnTe.ipynb).
+    Continue with the [collinear MnTe notebook](https://github.com/spglib/spinforge/blob/main/docs/paper/collinear_MnTe.ipynb).
 
 === "Coplanar Mn₃Sn"
 
     ![Coplanar Mn₃Sn spin-space-group and oriented-structure schematic](assets/paper/fig_example_coplanar.png){ .paper-figure }
 
-    Continue with the [coplanar Mn₃Sn notebook](paper/coplanar_Mn3Sn.ipynb).
+    Continue with the [coplanar Mn₃Sn notebook](https://github.com/spglib/spinforge/blob/main/docs/paper/coplanar_Mn3Sn.ipynb).
 
 === "Noncoplanar CoTa₃S₆"
 
     ![Noncoplanar CoTa₃S₆ spin-space-group and oriented-structure schematic](assets/paper/fig_example_noncoplanar.png){ .paper-figure }
 
-    Continue with the [noncoplanar CoTa₃S₆ notebook](paper/noncoplanar_CoTa3S6.ipynb).
+    Continue with the [noncoplanar CoTa₃S₆ notebook](https://github.com/spglib/spinforge/blob/main/docs/paper/noncoplanar_CoTa3S6.ipynb).

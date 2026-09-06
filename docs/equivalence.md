@@ -55,7 +55,9 @@ For the parent-normalizer action that classifies normal space subgroups, the act
 inverse conjugation. Thus a stored normalizer transformation $h_x$ maps a subgroup $H_x$
 to the representative $H_r$ when
 
-$$h_x^{-1}H_xh_x=H_r.$$
+$$
+h_x^{-1}H_xh_x=H_r.
+$$
 
 The corresponding stabilizer consists of the normalizer transformations $h$ satisfying
 $h^{-1}H_rh=H_r$. Code and API descriptions use the concrete phrases "equivalent objects,"
@@ -83,7 +85,9 @@ Let $G$ be the parent space group and $T$ its primitive translation subgroup. A 
 
 SpinForge follows the Hermann theorem. For every $G'\leq G$, there is a unique intermediate group
 
-$$G'\leq M\leq G$$
+$$
+G'\leq M\leq G
+$$
 
 such that $M$ is a t-subgroup of $G$ and $G'$ is a k-subgroup of $M$. Thus $M$ and $G'$ have the same point group, while $G$ and $M$ have the same translation group $T$. This separates the finite point-group choice from the bounded translation-lattice choice:
 
@@ -94,7 +98,9 @@ such that $M$ is a t-subgroup of $G$ and $G'$ is a k-subgroup of $M$. Thus $M$ a
 
 `with_propagation_vectors()` fixes the final commensurate invariant lattice
 
-$$L=\{t\in T\mid k_i\cdot t\in\mathbb{Z}\text{ for every supplied }k_i\}.$$
+$$
+L=\{t\in T\mid k_i\cdot t\in\mathbb{Z}\text{ for every supplied }k_i\}.
+$$
 
 In that case, only family lattices satisfying $L\leq T'\leq T$ are considered, and the relative lattice $L\leq T'$ replaces the unrestricted index-$n/d$ search. An explicitly supplied `k_index` must equal $[T:L]$.
 
@@ -128,7 +134,9 @@ The lower-level `SpinSpaceGroupEnumerator` receives one fixed family space group
 
 `SpinSpaceSubgroupEnumerator` instead consumes an enumerated `FamilySpaceSubgroup`. The family object records the inclusion $G'\leq G$ and the induced action of $N_G(G')/G'$. By default the class returns representatives under
 
-$$N_G(G') \times O(3).$$
+$$
+N_G(G') \times O(3).
+$$
 
 It first classifies invariant space subgroups $H'\trianglelefteq G'$ under $N_G(G')$. For each representative $H'$, it then classifies its spin-rotation assignments under the stabilizer of $H'$ in $N_G(G')$ together with the global $O(3)$ spin-frame action. Results are expressed in the translation-lattice basis of $G'$; `SSAGenerator` transforms them to the translation-lattice basis of the parent group $G$ for magnetic-structure generation.
 
@@ -147,7 +155,9 @@ The criteria exposed by the enumeration APIs are therefore:
 
 There is no separate `up_to_family_space_group_conjugacy` option. For an invariant subgroup $H'\trianglelefteq G'$ and spin representation $U$, preconjugation by $g\in G'$ gives
 
-$$U^g(x)=U(g^{-1}xg)=U(g)^{-1}U(x)U(g),$$
+$$
+U^g(x)=U(g^{-1}xg)=U(g)^{-1}U(x)U(g),
+$$
 
 which is already identified by the global $O(3)$ spin-frame equivalence. Such a boolean would therefore not change the abstract SSG classes. `SSAGenerator.up_to_parent_conjugacy` remains independent and controls only whether $G$-conjugate family space subgroups are retained separately.
 
