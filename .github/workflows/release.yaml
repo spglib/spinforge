@@ -27,6 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
+      actions: write
       contents: write
       pull-requests: write
       issues: read
@@ -41,6 +42,13 @@ jobs:
         uses: Songmu/tagpr@7ebae2dcc300132baa7cc9dd108c8923b07fc366 # v1.20.3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run checks for release pull request
+        if: steps.tagpr.outputs.tag == '' && steps.tagpr.outputs.pull_request != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_PR_BRANCH: >-
+            ${{ fromJSON(steps.tagpr.outputs.pull_request).head.ref }}
+        run: gh workflow run ci.yaml --ref "$RELEASE_PR_BRANCH"
 
   build:
     needs: tagpr
