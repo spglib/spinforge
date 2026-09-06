@@ -13,7 +13,7 @@ SpinForge requires Python 3.11 or later, [uv](https://docs.astral.sh/uv/), and
 git clone https://github.com/spglib/spinforge.git
 cd spinforge
 uv sync --dev
-uv run pre-commit install
+uv run prek install
 ```
 
 ## Checks
