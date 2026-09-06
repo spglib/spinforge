@@ -54,8 +54,8 @@ extra_css = ["stylesheets/extra.css"]
 [project.theme]
 name = "material"
 language = "en"
-logo = "assets/logo.svg"
-favicon = "assets/logo.svg"
+logo = "assets/logo-mark.svg"
+favicon = "assets/logo-mark.svg"
 features = [
   "content.code.copy",
   "content.code.annotate",
