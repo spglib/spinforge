@@ -54,6 +54,8 @@ extra_css = ["stylesheets/extra.css"]
 [project.theme]
 name = "material"
 language = "en"
+logo = "assets/logo.svg"
+favicon = "assets/logo.svg"
 features = [
   "content.code.copy",
   "content.code.annotate",
@@ -67,9 +69,6 @@ features = [
   "search.suggest",
   "toc.follow",
 ]
-
-[project.theme.icon]
-logo = "lucide/anvil"
 
 [[project.theme.palette]]
 scheme = "default"

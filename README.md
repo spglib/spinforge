@@ -1,6 +1,6 @@
 <div align="center">
 
-# <img src="./logo.svg" alt="SpinForge" width="450">
+# <img src="./docs/assets/logo.svg" alt="SpinForge" width="450">
 
 </div>
 
