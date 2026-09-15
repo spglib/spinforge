@@ -12,9 +12,9 @@ from spinforge.space_group import FamilySpaceSubgroup, NormalSpaceSubgroup
 from spinforge.space_group._normalizer import (
     classify_normal_space_subgroup_conjugacy_classes,
 )
-from spinforge.utils.group_theory import GroupElementIndex, SubgroupIndices
+from spinforge.utils.group_theory import GroupElementIndex, SubgroupIndices, _enumerate_subgroups
 
-from ._fixed_subgroup import _enumerate_subgroups, _fixed_group_table
+from ._fixed_subgroup import _fixed_group_table
 from ._normalizer_equivalence import deduplicate_spin_rotation_assignments
 from ._spin_only_group import get_spin_only_group
 from ._spin_space_group import NontrivialSpinSpaceGroup, SpinSpaceGroupEnumerator
