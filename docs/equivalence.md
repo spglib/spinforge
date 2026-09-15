@@ -132,7 +132,7 @@ Conjugacy-class reduction chooses family space subgroups $G'\leq G$, either one 
 
 The lower-level `SpinSpaceGroupEnumerator` receives one fixed family space group $G'$; it does not enumerate conjugate copies of $G'$ within a parent group. For this fixed spatial part, `enumerate_spin_space_groups()` enumerates compatible spin-rotation parts up to a global change of spin frame in $O(3)$ and groups them by invariant space subgroup. It does not apply a spatial-equivalence relation; parent-normalizer reduction is handled by `SpinSpaceSubgroupEnumerator`.
 
-`SpinSpaceSubgroupEnumerator` instead consumes an enumerated `FamilySpaceSubgroup`. The family object records the inclusion $G'\leq G$ and the induced action of $N_G(G')/G'$. By default the class returns representatives under
+The ordinary `SpinSpaceSubgroupEnumerator` constructor instead consumes an enumerated `FamilySpaceSubgroup`. The family object records the inclusion $G'\leq G$ and the induced action of $N_G(G')/G'$. By default the class returns representatives under
 
 $$
 N_G(G') \times O(3).
@@ -144,6 +144,12 @@ Set `up_to_parent_normalizer_conjugacy=False` to skip both spatial reductions: e
 
 `SSAGenerator` uses the default parent-normalizer reduction for every retained $G'\leq G$. This is independent of `SSAGenerator.up_to_parent_conjugacy`: setting that argument to `False` retains every $G$-conjugate family space subgroup separately, while SSGs over each retained subgroup are still reduced under its own $N_G(G')\times O(3)$ action.
 
+`SpinSpaceSubgroupEnumerator.from_spin_space_group(nssg, spin_only_group)` has
+a separate fixed-SSG mode. Its `enumerate_subgroups()` retains every subgroup
+selection in the supplied spatial quotient, optionally between inclusive bounds.
+It does not change the spin assignment or identify conjugate subgroups.
+See [the fixed-SSG API](api/spin-space-group.md#subgroups-of-one-fixed-spin-space-group).
+
 The criteria exposed by the enumeration APIs are therefore:
 
 | API | Objects being classified | Spatial equivalence | Spin-frame equivalence |
@@ -151,6 +157,7 @@ The criteria exposed by the enumeration APIs are therefore:
 | `FamilySpaceSubgroupEnumerator` | Family space subgroups $G'\leq G$ | Conjugacy by $G$ when `up_to_parent_conjugacy=True`; no conjugacy reduction otherwise | Not applicable |
 | `SpinSpaceGroupEnumerator` | Spin-rotation parts over one fixed $G'$ | Not applicable; $G'$ is fixed input | $O(3)$ |
 | `SpinSpaceSubgroupEnumerator` | SSGs over a family subgroup $G'\leq G$ | $N_G(G')$ when `up_to_parent_normalizer_conjugacy=True`; none otherwise | $O(3)$ |
+| `SpinSpaceSubgroupEnumerator.from_spin_space_group` | Subgroups of one fixed SSG retaining its spin-only group and invariant translations | None | None; the assignment is fixed |
 | `SSAGenerator` | SSGs over a retained family subgroup $G'\leq G$ | The parent-space-group normalizer $N_G(G')$ | $O(3)$ |
 
 There is no separate `up_to_family_space_group_conjugacy` option. For an invariant subgroup $H'\trianglelefteq G'$ and spin representation $U$, preconjugation by $g\in G'$ gives

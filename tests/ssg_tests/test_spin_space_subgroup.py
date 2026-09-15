@@ -209,3 +209,9 @@ def test_bounded_family_normalizer_uses_family_coordinates(
         k_index=relative_k_index,
     )
     assert len(representatives) == 2
+
+
+def test_family_mode_rejects_fixed_subgroup_enumeration(pca21_family_subgroup):
+    enumerator = SpinSpaceSubgroupEnumerator(pca21_family_subgroup)
+    with pytest.raises(ValueError, match="from_spin_space_group"):
+        enumerator.enumerate_subgroups()

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Collection, Sequence
+from typing import Self
 
 from spgrep.utils import NDArrayFloat, NDArrayInt
 from spinspg.spin import SpinOnlyGroup, SpinOnlyGroupType
@@ -11,14 +12,16 @@ from spinforge.space_group import FamilySpaceSubgroup, NormalSpaceSubgroup
 from spinforge.space_group._normalizer import (
     classify_normal_space_subgroup_conjugacy_classes,
 )
+from spinforge.utils.group_theory import GroupElementIndex, SubgroupIndices
 
+from ._fixed_subgroup import _enumerate_subgroups, _fixed_group_table
 from ._normalizer_equivalence import deduplicate_spin_rotation_assignments
 from ._spin_only_group import get_spin_only_group
 from ._spin_space_group import NontrivialSpinSpaceGroup, SpinSpaceGroupEnumerator
 
 
 class SpinSpaceSubgroupEnumerator:
-    """Enumerate SSGs over a family subgroup ``G' <= G``.
+    """Enumerate spin assignments over a family or subgroups of one fixed SSG.
 
     ``SpinSpaceGroupEnumerator`` supplies compatible spin-rotation parts for the
     fixed family group ``G'``, up to a global spin-frame transformation in
@@ -31,6 +34,12 @@ class SpinSpaceSubgroupEnumerator:
     ``NontrivialSpinSpaceGroup.transform_to_parent`` with
     ``family_space_subgroup.translation_sublattice`` when parent coordinates
     are required.
+
+    Alternatively, :meth:`from_spin_space_group` fixes an existing SSG and
+    enables :meth:`enumerate_subgroups`. This mode retains its spin assignment,
+    spin-only group, and invariant translations, with no conjugacy reduction.
+    The family-based properties and enumeration methods require the ordinary
+    constructor; the two modes cannot be mixed.
     """
 
     def __init__(
@@ -39,6 +48,7 @@ class SpinSpaceSubgroupEnumerator:
         *,
         atol: float = 1e-5,
     ) -> None:
+        self._fixed_table: NDArrayInt | None = None
         self._family_space_subgroup = family_space_subgroup
         self._atol = atol
         self._spin_space_group_enumerator = SpinSpaceGroupEnumerator(
@@ -56,16 +66,75 @@ class SpinSpaceSubgroupEnumerator:
             )
         )
 
+    @classmethod
+    def from_spin_space_group(
+        cls,
+        nontrivial_spin_space_group: NontrivialSpinSpaceGroup,
+        spin_only_group: SpinOnlyGroup,
+        *,
+        atol: float = 1e-5,
+    ) -> Self:
+        """Construct the fixed-SSG mode without generating new spin assignments.
+
+        Enumerate spatial subgroups of the finite quotient returned by
+        ``nontrivial_spin_space_group.get_full_operations_and_table()``. Each
+        selection retains the assigned spin cosets, the entire spin-only group,
+        and the invariant translation lattice. Subgroups that reduce either of
+        the latter two are outside this finite search.
+
+        Check that the spin lifts normalize the spin-only group and multiply
+        consistently modulo it, using absolute ``atol``. Collinear, coplanar,
+        and noncoplanar inputs are supported. Snapshot the quotient table so
+        subsequent input-array mutations do not change the selections.
+        """
+        instance = cls.__new__(cls)
+        instance._fixed_table = _fixed_group_table(
+            nontrivial_spin_space_group, spin_only_group, atol
+        )
+        instance._atol = atol
+        return instance
+
+    def enumerate_subgroups(
+        self,
+        *,
+        containing: Collection[GroupElementIndex] | None = None,
+        contained_in: Collection[GroupElementIndex] | None = None,
+    ) -> list[SubgroupIndices]:
+        """Return every subgroup between the inclusive spatial-index bounds.
+
+        Available only after :meth:`from_spin_space_group`. Indices refer to
+        the original order from ``get_full_operations_and_table()``; spin lifts
+        and translation representatives are neither reassigned nor reordered.
+        The bounds must be nonempty, closed subgroups of that quotient, with
+        ``containing <= contained_in``. Defaults are the identity subgroup and
+        the full quotient. Invalid bounds raise ``ValueError``.
+
+        Return immutable index sets ordered by size and then sorted indices.
+        Conjugate subgroups remain separate. The search starts at the lower
+        bound and stays inside the upper bound, which need not be normal.
+        """
+        if self._fixed_table is None:
+            raise ValueError("enumerate_subgroups requires from_spin_space_group")
+        return _enumerate_subgroups(self._fixed_table, containing, contained_in)
+
+    def _require_family_mode(self) -> None:
+        """Reject family-based access on a fixed-SSG instance."""
+        if self._fixed_table is not None:
+            raise ValueError("This operation requires construction with FamilySpaceSubgroup")
+
     @property
     def family_space_subgroup(self) -> FamilySpaceSubgroup:
+        self._require_family_mode()
         return self._family_space_subgroup
 
     @property
     def prim_rotations(self) -> NDArrayInt:
+        self._require_family_mode()
         return self._spin_space_group_enumerator.prim_rotations
 
     @property
     def prim_translations(self) -> NDArrayFloat:
+        self._require_family_mode()
         return self._spin_space_group_enumerator.prim_translations
 
     def enumerate_spin_space_groups(
@@ -119,6 +188,7 @@ class SpinSpaceSubgroupEnumerator:
         callers reject invariant subgroups using properties that do not depend
         on those assignments.
         """
+        self._require_family_mode()
         spin_only_group = get_spin_only_group(spin_only_group_type)
         if (spin_only_group_type == SpinOnlyGroupType.COLLINEAR) and (k_index >= 3):
             return spin_only_group, []
