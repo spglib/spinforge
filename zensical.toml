@@ -39,6 +39,7 @@ nav = [
     { "spinCIF" = "api/spincif.md" },
     { "MCIF" = "api/mcif.md" },
     { "Irreducible representations" = "api/irreps.md" },
+    { "Finite groups" = "api/group-theory.md" },
   ] },
   { "Project" = [
     { "Citation" = "citation.md" },

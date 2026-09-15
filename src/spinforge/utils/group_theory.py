@@ -60,7 +60,7 @@ def get_coset_representatives(
 def _subgroup_bound(
     values: Collection[GroupElementIndex], table: NDArrayInt, name: str
 ) -> SubgroupIndices:
-    """Validate one bound as a subgroup in the original quotient-table order."""
+    """Validate one bound as a subgroup using the input table indices."""
     if any(
         isinstance(index, (bool, np.bool_))
         or not isinstance(index, (int, np.integer))
@@ -97,16 +97,45 @@ def _extend_subgroup(
     return frozenset(reached)
 
 
-def _enumerate_subgroups(
+def enumerate_subgroups(
     table: NDArrayInt,
-    containing: Collection[GroupElementIndex] | None,
-    contained_in: Collection[GroupElementIndex] | None,
+    *,
+    containing: Collection[GroupElementIndex] | None = None,
+    contained_in: Collection[GroupElementIndex] | None = None,
 ) -> list[SubgroupIndices]:
-    """Enumerate the subgroup interval by adjoining generators to its lower bound.
+    """Enumerate every subgroup between inclusive bounds in a finite group.
 
-    Every proper inclusion can be reached by adding one element and closing.
-    Elements in the same right coset of the current subgroup generate the same
-    extension, so only one per coset is needed. Bounds need not be normal.
+    Parameters
+    ----------
+    table : array, shape (order, order)
+        Cayley table of a finite group: ``table[i, j]`` is the index of the
+        product of elements ``i`` and ``j``. A valid group table is required;
+        group axioms are not checked. The identity need not have index zero.
+    containing : collection of int, optional
+        Lower subgroup bound. Defaults to the identity subgroup.
+    contained_in : collection of int, optional
+        Upper subgroup bound. Defaults to the whole group.
+
+    Returns
+    -------
+    list of frozenset of int
+        All subgroups between the bounds, ordered by size and then sorted
+        indices. Indices retain the input table's numbering. Conjugate
+        subgroups remain separate. Inputs are not modified.
+
+    Raises
+    ------
+    ValueError
+        If either bound is not a subgroup of the supplied group, contains
+        invalid indices, or ``containing`` is not a subset of ``contained_in``.
+
+    Notes
+    -----
+    The search starts at the lower bound and stays inside the upper bound;
+    neither bound needs to be normal. Every proper inclusion can be reached
+    by adjoining an element and closing under products. Elements in the same
+    right coset of the current subgroup generate the same extension, so only
+    one per coset is needed.
     """
     lower = _subgroup_bound(
         (get_identity_index(table),) if containing is None else containing, table, "containing"
