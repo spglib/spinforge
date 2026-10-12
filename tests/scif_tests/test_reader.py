@@ -21,6 +21,55 @@ def test_reader_external_style_columns(external_scif):
     assert np.allclose(structure.site_properties["magmom"], [[0, 0, 3.0], [0, 0, 3.0]])
 
 
+def test_reader_rejects_duplicate_moment_labels(external_scif):
+    text = external_scif + "Mn1 0.0 0.0 3.0 0,0,w 0,0,w 3.0\n"
+    with pytest.raises(ValueError, match="Spin-moment labels must be unique"):
+        SpinCifReader(text)
+
+
+@pytest.mark.parametrize(
+    "columns",
+    [
+        "loop_\n_atom_site_spin_moment.label\nMn1 Mn2\n"
+        "loop_\n_atom_site_spin_moment.axis_u\n_atom_site_spin_moment.axis_v\n"
+        "_atom_site_spin_moment.axis_w\n0 0 3\n",
+        "loop_\n_atom_site_spin_moment.label\n_atom_site_spin_moment.axis_u\n"
+        "_atom_site_spin_moment.axis_v\n_atom_site_spin_moment.axis_w\nMn1 0 0 3\n"
+        "loop_\n_atom_site_spin_moment.symmform_uvw\n0,0,w 0,0,w\n",
+        "_atom_site_spin_moment.label Mn1\n_atom_site_spin_moment.axis_u 0\n"
+        "_atom_site_spin_moment.axis_v 0\n_atom_site_spin_moment.axis_w 3\n",
+    ],
+)
+def test_reader_rejects_malformed_moment_columns(external_scif, columns):
+    text = external_scif.split("loop_\n_atom_site_spin_moment.label")[0] + columns
+    with pytest.raises(ValueError, match="equal-length loop columns"):
+        SpinCifReader(text)
+
+
+@pytest.mark.parametrize(
+    ("type_rows", "message"),
+    [
+        ("Mn2+ 3", "contradicts its explicit species identity"),
+        ("Mn2+ 2\nMn2+ 2", "Atom-type symbols must be unique"),
+        ("Mn2+ nan", "Oxidation states must be finite"),
+        ("Mn2+ inf", "Oxidation states must be finite"),
+    ],
+)
+def test_reader_rejects_invalid_oxidation_metadata(external_scif, type_rows, message):
+    text = external_scif.replace("Mn1 Mn ", "Mn1 Mn2+ ")
+    text += "loop_\n_atom_type_symbol\n_atom_type_oxidation_number\n" + type_rows + "\n"
+    with pytest.raises(ValueError, match=message):
+        SpinCifReader(text)
+
+
+def test_reader_rejects_mismatched_atom_type_columns(external_scif):
+    text = external_scif + (
+        "loop_\n_atom_type_symbol\nMn2+ Fe2+\nloop_\n_atom_type_oxidation_number\n2\n"
+    )
+    with pytest.raises(ValueError, match="equal-length loop columns"):
+        SpinCifReader(text)
+
+
 def test_reader_rejects_non_grammar_expressions(external_scif):
     # uvw values from the file must never reach code execution; anything
     # outside the linear-expression grammar is rejected while parsing.

@@ -16,7 +16,7 @@ import re
 from os import PathLike
 
 import numpy as np
-from pymatgen.core import Lattice, Structure
+from pymatgen.core import Element, Lattice, Species, Structure, get_el_sp
 from pymatgen.core.operations import MagSymmOp
 from pymatgen.io.cif import CifBlock, CifFile
 from spgrep.utils import NDArrayFloat, is_integer_array
@@ -45,6 +45,12 @@ class SpinCifReader:
         ``(label, symbol, frac_position, moment_uvw, multiplicity)`` per
         asymmetric-unit site (zero moment when the site has no
         ``_atom_site_spin_moment`` row).
+    site_occupancies
+        Occupancy keyed by atom-site label, defaulting to one when absent.
+    site_moment_subspaces
+        Coefficient matrices from ``symmform_uvw``, keyed by magnetic atom-site
+        label. Each matrix's columns span the permitted moment subspace in the
+        declared spin basis. Missing or unknown forms have no entry.
     lattice
         :class:`pymatgen.core.Lattice` from the cell tags.
     spin_basis
@@ -75,15 +81,32 @@ class SpinCifReader:
         else:  # the loop is optional in the dictionary
             self.spin_lattice = [(np.eye(3), np.zeros(3), 1, np.eye(3))]
 
+        moment_columns = _read_loop_columns(
+            block,
+            tuple(
+                f"_atom_site_spin_moment.{column}"
+                for column in ("label", "axis_u", "axis_v", "axis_w")
+            ),
+            optional=True,
+        )
+        moment_labels, _, _, _ = moment_columns
+        if len(set(moment_labels)) != len(moment_labels):
+            raise ValueError("Spin-moment labels must be unique")
         moments = {
             label: np.array([float(u), float(v), float(w)])
-            for label, u, v, w in zip(
-                *(
-                    block.data.get(f"_atom_site_spin_moment.{column}", [])
-                    for column in ("label", "axis_u", "axis_v", "axis_w")
-                )
-            )
+            for label, u, v, w in zip(*moment_columns, strict=True)
         }
+        self._magnetic_labels = frozenset(moments)
+        self.site_moment_subspaces = {}
+        if "_atom_site_spin_moment.symmform_uvw" in block.data:
+            subspace_columns = _read_loop_columns(
+                block, ("_atom_site_spin_moment.label", "_atom_site_spin_moment.symmform_uvw")
+            )
+            self.site_moment_subspaces = {
+                label: _linear_matrix(expression, "uvw")
+                for label, expression in zip(*subspace_columns, strict=True)
+                if expression not in (".", "?")
+            }
         self.sites = [
             (
                 label,
@@ -101,6 +124,34 @@ class SpinCifReader:
                 block.data["_atom_site_symmetry_multiplicity"],
             )
         ]
+        labels = block.data["_atom_site_label"]
+        if len(set(labels)) != len(labels):
+            raise ValueError("Atom-site labels must be unique")
+        if not self._magnetic_labels.issubset(labels):
+            raise ValueError("A spin moment refers to an unknown atom-site label")
+        self.site_occupancies = {
+            label: float(occupancy)
+            for label, occupancy in zip(
+                labels, block.data.get("_atom_site_occupancy", ["1"] * len(labels)), strict=True
+            )
+        }
+        if any(
+            not np.isfinite(occupancy) or not 0 < occupancy <= 1
+            for occupancy in self.site_occupancies.values()
+        ):
+            raise ValueError("Atom-site occupancies must be finite and lie in (0, 1]")
+        oxidation_states = _read_oxidation_states(block)
+        self._site_species = {}
+        for label, symbol, _, moment, _ in self.sites:
+            species = get_el_sp(symbol)
+            oxidation = oxidation_states.get(symbol)
+            if oxidation is not None:
+                species = Species(species.symbol, oxidation)
+            if not isinstance(species, Element | Species):
+                raise ValueError(f"Unsupported atom-site species: {symbol}")
+            if not np.all(np.isfinite(moment)):
+                raise ValueError(f"Spin moment for {label} must be finite")
+            self._site_species[label] = species
 
         self.lattice = Lattice.from_parameters(
             *(float(block.data[f"_cell_length_{name}"]) for name in "abc"),
@@ -126,14 +177,29 @@ class SpinCifReader:
     def get_structure(self) -> Structure:
         """Expand the asymmetric unit into the full magnetic structure.
 
-        Moments are returned as Cartesian ``magmom`` site properties in the
-        lattice's own Cartesian frame. Raises if an orbit disagrees with its
-        ``_atom_site_symmetry_multiplicity`` or transforms inconsistently.
+        Coincident constituent rows are merged into one disordered site with
+        their occupancies and oxidation identities. ``species_magmoms`` maps
+        every constituent identity to its Cartesian occupied-atom moment;
+        ``magnetic_species`` lists the selected constituents, identified by
+        the presence of a moment row (including explicit zeros).
+
+        The existing ``magmom`` property is the shared selected occupied-atom
+        vector, or zero when none are selected. Unequal selected constituent
+        vectors are outside this reader's shared-moment model and raise an
+        error. No occupancy averaging is applied. All vectors use the read
+        lattice's Cartesian frame.
+
+        Raises if an orbit disagrees with its declared multiplicity, transforms
+        inconsistently, or repeats the same constituent at a position.
         """
-        species, coords, magmoms = [], [], []
+        compositions: list[dict[Element | Species, float]] = []
+        coords: list[np.ndarray] = []
+        species_magmoms: list[dict[str, np.ndarray]] = []
+        selections: list[set[str]] = []
+        operations = self.expanded_operations()
         for label, symbol, frac, moment_uvw, multiplicity in self.sites:
             orbit: list[tuple[np.ndarray, np.ndarray]] = []
-            for w, t, _tr, u in self.expanded_operations():
+            for w, t, _tr, u in operations:
                 position = (w @ frac + t) % 1.0
                 moment = u @ moment_uvw
                 for known_position, known_moment in orbit:
@@ -151,10 +217,100 @@ class SpinCifReader:
                     f"Orbit of {label} has {len(orbit)} sites, multiplicity says {multiplicity}"
                 )
             for position, moment in orbit:
-                species.append(symbol)
-                coords.append(position)
-                magmoms.append(moment @ self.spin_basis)
-        return Structure(self.lattice, species, coords, site_properties={"magmom": magmoms})
+                index = next(
+                    (
+                        index
+                        for index, known_position in enumerate(coords)
+                        if is_integer_array(position - known_position, atol=self._symprec)
+                    ),
+                    len(coords),
+                )
+                if index == len(coords):
+                    coords.append(position)
+                    compositions.append({})
+                    species_magmoms.append({})
+                    selections.append(set())
+                species = self._site_species[label]
+                identity = str(species)
+                if species in compositions[index]:
+                    raise ValueError(f"Repeated constituent {identity} at {position}")
+                compositions[index][species] = self.site_occupancies[label]
+                species_magmoms[index][identity] = moment @ self.spin_basis
+                if label in self._magnetic_labels:
+                    selections[index].add(identity)
+
+        magmoms = []
+        for composition, moments, selected in zip(
+            compositions, species_magmoms, selections, strict=True
+        ):
+            if sum(composition.values()) > 1 + 1e-6:
+                raise ValueError("Constituent occupancies at one site sum to more than one")
+            shared = moments[min(selected)] if selected else np.zeros(3)
+            if any(
+                not np.allclose(moments[identity], shared, atol=self._symprec, rtol=0)
+                for identity in selected
+            ):
+                raise ValueError(
+                    "Unequal selected constituent moments cannot be represented by the shared "
+                    "occupied-atom magmom property"
+                )
+            magmoms.append(shared)
+        return Structure(
+            self.lattice,
+            compositions,
+            coords,
+            site_properties={
+                "magmom": magmoms,
+                "species_magmoms": species_magmoms,
+                "magnetic_species": [tuple(sorted(selected)) for selected in selections],
+            },
+        )
+
+
+def _read_loop_columns(
+    block: CifBlock, tags: tuple[str, ...], *, optional: bool = False
+) -> list[list[str]]:
+    """Read named loop columns without silently truncating malformed categories."""
+    if optional and not any(tag in block.data for tag in tags):
+        return [[] for _ in tags]
+    columns = []
+    for tag in tags:
+        column = block.data.get(tag)
+        if not isinstance(column, list):
+            raise ValueError(f"Expected equal-length loop columns for {', '.join(tags)}")
+        columns.append(column)
+    if len({len(column) for column in columns}) != 1:
+        raise ValueError(f"Expected equal-length loop columns for {', '.join(tags)}")
+    return columns
+
+
+def _read_oxidation_states(block: CifBlock) -> dict[str, float]:
+    """Read unambiguous atom types, checking ionic tokens against their charges."""
+    tags = ("_atom_type_symbol",)
+    has_oxidation = "_atom_type_oxidation_number" in block.data
+    if has_oxidation:
+        tags += ("_atom_type_oxidation_number",)
+    columns = _read_loop_columns(block, tags, optional=True)
+    symbols = columns[0]
+    if len(set(symbols)) != len(symbols):
+        raise ValueError("Atom-type symbols must be unique")
+    if not has_oxidation:
+        return {}
+    _, values = columns
+    oxidation_states = {}
+    for symbol, value in zip(symbols, values, strict=True):
+        if value in (".", "?"):
+            continue
+        oxidation = float(value)
+        if not np.isfinite(oxidation):
+            raise ValueError("Oxidation states must be finite")
+        species = get_el_sp(symbol)
+        if isinstance(species, Species) and species.oxi_state != oxidation:
+            raise ValueError(
+                f"Oxidation state for {symbol} contradicts its explicit species identity"
+            )
+        oxidation_states[symbol] = oxidation
+    return oxidation_states
 
 
 def _read_symop_loop(block: CifBlock, category: str) -> list[SymmetryOperation]:

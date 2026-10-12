@@ -31,9 +31,21 @@ you need both representations.
   revision, [`SPINCIF_REVISION`][spinforge.scif.SPINCIF_REVISION], into each
   file. The reader supports files written by SpinForge and the FINDSPINGROUP
   reference files; it is not a general-purpose spinCIF parser.
-- MCIF output supports partial occupancy of a single species at a site. It does
-  not support mixed solid-solution sites because those sites cannot pass
-  through the symmetry identification used by the writer.
+- Both writers preserve mixed species, oxidation states, and partial occupancy.
+  Use `magnetic_species` to select constituents that share each site's
+  occupied-atom moment. Other constituents have zero moment. Occupancy is written
+  separately and is not multiplied into the moment.
+- For spinCIF, pass full `site_compositions` when atomic numbers do not describe
+  the chemistry. `spin_rotation` accepts the explicit orthogonal matrix that
+  maps intrinsic spins to Cartesian spins, including an improper frame. Supply
+  moments already rotated by that matrix.
+- `SpinCifReader.get_structure()` merges coincident constituents and retains
+  `species_magmoms` and `magnetic_species` site properties. Its `magmom` remains
+  the shared selected occupied-atom vector. It rejects unequal selected moments
+  at one position rather than averaging them.
+- Pymatgen's structure parser does not support disordered magnetic CIFs.
+  Mixed MCIF output therefore requires a consumer that preserves constituent
+  rows and their individual occupancies and moments.
 
 To write and check either format, continue to [Export result files](export-files.md).
 For the scientific relation between spin and magnetic symmetry, see the

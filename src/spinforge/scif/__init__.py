@@ -22,6 +22,14 @@ Conventions used by this writer:
   it enters through ``_space_group_spin.collinear_direction_xyz`` /
   ``_space_group_spin.coplanar_perp_uvw``, filled from the
   ``spinspg.spin.SpinOnlyGroup`` the structure was enumerated with.
+- ``spin_rotation`` accepts the explicit orthogonal frame used for the sampled
+  moments, independently of an MSG object. ``site_compositions`` preserves
+  partial and mixed occupancies and oxidation states; ``magnetic_species``
+  assigns the shared occupied-atom moment only to selected constituents.
+- The reader merges constituent rows into disordered sites. Its ``magmom``
+  property remains the shared occupied-atom vector, while ``species_magmoms``
+  and ``magnetic_species`` retain the constituent values and selections. Compute
+  a mean-site moment by weighting constituent moments by occupancy once.
 
 The dictionary is explicitly preliminary upstream ("all dictionary aspects
 and file formats are subject to change"): the targeted revision is pinned as

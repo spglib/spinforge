@@ -16,6 +16,14 @@ The initial public release includes:
 - Public project, contribution, security, citation, and data-attribution
   documentation.
 
+## Unreleased
+
+- Preserve mixed-site compositions, partial occupancies, oxidation states, and
+  selected magnetic constituents in MCIF and spinCIF exports.
+- Accept explicit orthogonal spin frames in `SpinCifWriter`.
+- Restore occupancies when reading spinCIF and retain constituent moments when
+  merging disordered sites.
+
 ## v1.0.0 - 2026/09/06
 
 - Initial public release

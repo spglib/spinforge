@@ -52,10 +52,12 @@ def test_site_occupancies_are_written_and_checked(enumerated):
     text = str(
         SpinCifWriter(sas, nssg, moments, spin_only_group=sog, site_occupancies=occupancies)
     )
-    mn_rows = [line for line in text.splitlines() if line.startswith("Mn1 Mn ")]
-    assert len(mn_rows) == 1 and "0.500000" in mn_rows[0]
-    te_rows = [line for line in text.splitlines() if line.startswith("Te1 Te ")]
-    assert len(te_rows) == 1 and "1.000000" in te_rows[0]
+    structure = SpinCifReader(text).get_structure()
+    assert len(structure) == len(sas.supercell.positions)
+    assert all(
+        site.species.get_el_amt_dict() == ({"Mn": 0.5} if "Mn" in site.species else {"Te": 1.0})
+        for site in structure
+    )
 
     with pytest.raises(ValueError, match="does not match"):
         SpinCifWriter(sas, nssg, moments, spin_only_group=sog, site_occupancies=[0.5])
