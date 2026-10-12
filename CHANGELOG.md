@@ -20,9 +20,15 @@ The initial public release includes:
 
 - Preserve mixed-site compositions, partial occupancies, oxidation states, and
   selected magnetic constituents in MCIF and spinCIF exports.
-- Accept explicit orthogonal spin frames in `SpinCifWriter`.
-- Restore occupancies when reading spinCIF and retain constituent moments when
-  merging disordered sites.
+- Add `SpinCifWriter.from_structure` for complete constituent chemistry and
+  explicit orthogonal spin frames; preserve chemistry in `from_oriented`.
+- Preserve separate spinCIF constituent rows with occupancies, individual
+  moments, and explicit magnetic declarations.
+- Preserve fractional oxidation identities and weak moments without display
+  rounding. Reject loss during pymatgen conversion in the spinCIF reader and
+  Structure-based exports.
+- Use caller tolerances for position, moment, and frame checks and MCIF
+  translation snapping.
 
 ## v1.0.0 - 2026/09/06
 

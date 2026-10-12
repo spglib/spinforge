@@ -4,20 +4,10 @@ and symmetry-restricted moment forms."""
 from __future__ import annotations
 
 import numpy as np
-from pymatgen.core.operations import MagSymmOp
 from spgrep.utils import NDArrayFloat
 from spinspg.spin import SpinOnlyGroup, SpinOnlyGroupType
 
-
-def _fmt(value: float, *, decimals: int = 6) -> str:
-    """Format with fixed decimals, avoiding a ``-0.000000`` output.
-
-    The zero-flush threshold is half a unit in the last printed place, i.e.
-    exactly the rounding boundary of the format itself, so no tolerance beyond
-    the output precision is introduced.
-    """
-    v = 0.0 if abs(value) < 0.5 * 10.0**-decimals else float(value)
-    return f"{v:.{decimals}f}"
+from spinforge._cif import _number, _xyzt_string
 
 
 def _spinframe_p_abc(frame: NDArrayFloat, lattice: NDArrayFloat, *, atol: float) -> str:
@@ -52,7 +42,7 @@ def _collinear_direction_xyz(
     axis = q_mat @ np.asarray(spin_only_group.axis, dtype=float)
     direction = axis @ np.linalg.inv(lattice)
     direction = direction / np.max(np.abs(direction))
-    return "'" + ",".join(_fmt(x) for x in direction) + "'"
+    return "'" + ",".join(_number(x) for x in direction) + "'"
 
 
 def _coplanar_perp_uvw(
@@ -66,22 +56,16 @@ def _coplanar_perp_uvw(
     if spin_only_group.spin_only_group_type != SpinOnlyGroupType.COPLANAR:
         return "."
     normal = frame.T @ q_mat @ np.asarray(spin_only_group.axis, dtype=float)
-    return "'" + ",".join(_fmt(x) for x in normal) + "'"
+    return "'" + ",".join(_number(x) for x in normal) + "'"
 
 
 def _xyzt(w: np.ndarray, t: np.ndarray, u: np.ndarray) -> str:
     time_reversal = -1 if np.linalg.det(u) < 0 else 1
-    op = MagSymmOp.from_rotation_and_translation_and_time_reversal(
-        rotation_matrix=np.array(w),
-        translation_vec=np.remainder(t, 1.0),
-        time_reversal=time_reversal,
-    )
-    # CIF loop columns are whitespace-delimited; xyzt must be one token
-    return op.as_xyzt_str().replace(" ", "")
+    return _xyzt_string(w, np.remainder(t, 1.0), time_reversal)
 
 
 # Exact coefficient strings for common rational values; anything else
-# (e.g. sqrt(3)/2) is written as a plain 15-significant-digit number to
+# (e.g. sqrt(3)/2) is written as a lossless decimal to
 # keep the expression grammar free of math functions.
 _EXACT_COEFFICIENTS = [
     (1.0, "1"),
@@ -101,7 +85,7 @@ def _coefficient_str(value: float, *, atol: float) -> str:
     for ref, text in _EXACT_COEFFICIENTS:
         if np.isclose(magnitude, ref, rtol=0, atol=atol):
             return sign + text
-    return f"{value:.15g}"
+    return _number(value)
 
 
 def _linear_expr(coefficients: NDArrayFloat, variables: tuple[str, ...], *, atol: float) -> str:

@@ -32,20 +32,39 @@ you need both representations.
   file. The reader supports files written by SpinForge and the FINDSPINGROUP
   reference files; it is not a general-purpose spinCIF parser.
 - Both writers preserve mixed species, oxidation states, and partial occupancy.
-  Use `magnetic_species` to select constituents that share each site's
-  occupied-atom moment. Other constituents have zero moment. Occupancy is written
-  separately and is not multiplied into the moment.
-- For spinCIF, pass full `site_compositions` when atomic numbers do not describe
-  the chemistry. `spin_rotation` accepts the explicit orthogonal matrix that
-  maps intrinsic spins to Cartesian spins, including an improper frame. Supply
-  moments already rotated by that matrix.
-- `SpinCifReader.get_structure()` merges coincident constituents and retains
-  `species_magmoms` and `magnetic_species` site properties. Its `magmom` remains
-  the shared selected occupied-atom vector. It rejects unequal selected moments
-  at one position rather than averaging them.
+  Their `Structure` input carries Cartesian occupied-atom `magmom` values and
+  an optional boolean `magnetic` property, which defaults to true. False omits a
+  magnetic declaration; true preserves it even at zero moment. To assign a
+  moment to only part of a mixed site, supply separate constituent rows at the
+  same position. Occupancy is written separately from the moment.
+- Use `SpinCifWriter.from_structure` for complete chemistry and an explicit
+  `spin_rotation`. The matrix maps intrinsic spins to Cartesian spins, including
+  improper frames. Supply moments already rotated by that matrix.
+- The writers group coincident rows for their symmetry backends. Magnetic
+  constituents at one physical site must share a vector. The spinCIF reader
+  preserves separate constituent rows and permits unequal coincident vectors.
+  Its output therefore needs application-specific checks before use by routines
+  that require one site per position.
+- Occupancy must survive pymatgen's representation. The reader reports an error
+  if conversion would discard a constituent; it does not normalize occupancies.
 - Pymatgen's structure parser does not support disordered magnetic CIFs.
   Mixed MCIF output therefore requires a consumer that preserves constituent
   rows and their individual occupancies and moments.
+
+## Numerical tolerances
+
+`MCifWriter` and `SpinCifWriter.from_structure` use `symprec` in Cartesian length
+units. MCIF also uses it to bound displacement from rational translation snapping.
+An explicit `mag_symprec` controls moment comparisons in moment units, while
+spinCIF's `atol` controls dimensionless frame and coefficient checks.
+
+The reader's `symprec` retains its fractional-position units. Its optional
+`mag_symprec` and `atol` override moment and normalized-frame tolerances;
+omitting them retains the existing `symprec` fallback. Absolute comparisons use
+`rtol=0`. For the reader and Structure-based exports, chemical identities and
+occupancies are independent of these geometric and magnetic tolerances. The
+legacy `site_occupancies` argument retains its `atol`-based occupancy bounds and
+orbit comparisons; it writes the representative occupancy for each orbit.
 
 To write and check either format, continue to [Export result files](export-files.md).
 For the scientific relation between spin and magnetic symmetry, see the

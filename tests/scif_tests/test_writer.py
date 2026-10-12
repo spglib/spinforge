@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 from moyopy import SpaceGroupType
+from pymatgen.io.cif import CifFile
 from spinspg.spin import SpinOnlyGroupType
 
 from spinforge.scif import SpinCifReader, SpinCifWriter
@@ -97,17 +98,48 @@ def test_snap_translation_respects_supercell_grid():
     assert np.array_equal(_snap_translation(noisy, denom=denom, atol=1e-5), [0.0, 0.0, 0.2])
 
 
-def test_weak_moments_are_not_dropped(enumerated):
+@pytest.mark.parametrize("magnitude", [4e-6, 1e-10])
+def test_weak_moments_are_not_dropped(enumerated, magnitude):
     # Moments below the old norm-atol cutoff but above the print resolution
     # must still be written; otherwise weak magnetic structures silently
     # round-trip as nonmagnetic (the reader treats omitted rows as zero).
     sog, nssg, sas = enumerated("MnTe", SpinOnlyGroupType.COLLINEAR, 1)[0]
     moments = sas._sample_magnetic_moments(rng=np.random.default_rng(0))
-    weak = moments * (4e-6 / np.max(np.abs(moments)))
+    weak = moments * (magnitude / np.max(np.abs(moments)))
     text = str(SpinCifWriter(sas, nssg, weak, spin_only_group=sog))
     assert "_atom_site_spin_moment.label" in text
     structure = SpinCifReader(text).get_structure()
     assert np.max(np.abs(structure.site_properties["magmom"])) > 0
+
+
+def test_legacy_occupancy_tolerance_is_preserved(enumerated):
+    sog, group, ssa = next(
+        entry
+        for entry in enumerated("MnTe", SpinOnlyGroupType.COLLINEAR, 2)
+        if entry[1].spin_translation_coset.size > 1 and entry[2].dim == 1
+    )
+    (moments,) = ssa.magnetic_moments_basis
+    amounts = [0.8] * ssa.supercell.num_supercell_sites
+    index = next(index for index, number in enumerate(ssa.supercell.numbers) if number == 25)
+    amounts[index] += 5e-7
+    with pytest.raises(ValueError, match="not invariant"):
+        SpinCifWriter(
+            ssa, group, moments, spin_only_group=sog, site_occupancies=amounts, atol=1e-8
+        )
+    SpinCifWriter(ssa, group, moments, spin_only_group=sog, site_occupancies=amounts, atol=1e-6)
+
+    amounts = [1 + 5e-7] * ssa.supercell.num_supercell_sites
+    with pytest.raises(ValueError, match="occupancies"):
+        SpinCifWriter(
+            ssa, group, moments, spin_only_group=sog, site_occupancies=amounts, atol=1e-8
+        )
+    text = str(
+        SpinCifWriter(
+            ssa, group, moments, spin_only_group=sog, site_occupancies=amounts, atol=1e-6
+        )
+    )
+    (block,) = CifFile.from_str(text).data.values()
+    assert all(float(amount) == 1 + 5e-7 for amount in block.data["_atom_site_occupancy"])
 
 
 def test_writer_declares_p_abc_frame(enumerated):

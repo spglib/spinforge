@@ -139,6 +139,23 @@ def test_translation_snapping_respects_cartesian_symprec(symprec) -> None:
         assert np.linalg.norm(displacement @ structure.lattice.matrix) <= symprec
 
 
+def test_general_origin_translation_retains_requested_precision() -> None:
+    structure = Structure(
+        Lattice.from_parameters(4, 5, 6, 70, 80, 75),
+        ["Fe"],
+        [[0.123456789, 0.234567891, 0.345678912]],
+        site_properties={"magmom": [[0, 0, 2]]},
+    )
+    text = str(MCifWriter(structure, symprec=1e-12))
+    (block,) = CifFile.from_str(text).data.values()
+    (site,) = structure
+    for operation in CifParser.from_str(text).get_magsymops(block):
+        distance, _ = structure.lattice.get_distance_and_image(
+            site.frac_coords, operation.operate(site.frac_coords)
+        )
+        assert distance <= 1e-12
+
+
 def test_save_requires_magmom_property() -> None:
     from pymatgen.core import Lattice, Structure
 
@@ -188,7 +205,7 @@ def test_mixed_site_retains_minority_species_and_occupied_atom_moment() -> None:
         [[0, 0, 0], [0, 0, 0.5]],
         site_properties={"magmom": [[1, 2, 3], [-1, -2, -3]]},
     )
-    text = str(MCifWriter(mixed, magnetic_species=[("Fe2+",), ("Fe2+",)]))
+    text = str(MCifWriter(_constituent_structure(mixed, [("Fe2+",), ("Fe2+",)])))
     images = _expand_constituent_rows(text)
     assert len(images) == 4
     for symbol, occupancy, position, moment, selected in images:
@@ -213,7 +230,7 @@ def test_symmetry_preserves_constituent_selection_even_for_zero_moments(moment) 
         [[0, 0, 0], [0, 0, 0.5]],
         site_properties={"magmom": [moment, moment]},
     )
-    text = str(MCifWriter(structure, magnetic_species=[("Fe",), ("Mn",)]))
+    text = str(MCifWriter(_constituent_structure(structure, [("Fe",), ("Mn",)])))
     block = next(iter(CifFile.from_str(text).data.values())).data
     assert len(block["_atom_site_label"]) == 4
     assert len(block["_atom_site_moment.label"]) == 2
@@ -232,7 +249,7 @@ def test_oxidation_states_and_neutral_elements_remain_distinct() -> None:
         [[0, 0, 0]],
         site_properties={"magmom": [[0, 0, 2]]},
     )
-    text = str(MCifWriter(structure, magnetic_species=[("Fe2+",)]))
+    text = str(MCifWriter(_constituent_structure(structure, [("Fe2+",)])))
     data = next(iter(CifFile.from_str(text).data.values())).data
     assert set(data["_atom_site_type_symbol"]) == {"Fe", "Fe0+", "Fe2+"}
     assert dict(zip(data["_atom_type_symbol"], data["_atom_type_oxidation_number"])) == {
@@ -277,28 +294,120 @@ def test_small_minority_occupancy_is_not_rounded_to_zero() -> None:
         [[0, 0, 0]],
         site_properties={"magmom": [[0, 0, 2]]},
     )
-    images = _expand_constituent_rows(str(MCifWriter(structure, magnetic_species=[("Fe",)])))
+    images = _expand_constituent_rows(
+        str(MCifWriter(_constituent_structure(structure, [("Fe",)])))
+    )
     (iron,) = (row for row in images if row[0] == "Fe")
     assert iron[1] == 1e-7
     assert np.allclose(iron[3], [0, 0, 2])
 
 
+def test_fractional_oxidation_states_and_weak_moments_are_lossless() -> None:
+    structure = Structure(
+        Lattice.cubic(4),
+        [{Species("Fe", 0.331): 0.4, Species("Fe", 0.334): 0.5}],
+        [[0, 0, 0]],
+        site_properties={"magmom": [[0, 0, 1e-10]]},
+    )
+    (block,) = CifFile.from_str(str(MCifWriter(structure))).data.values()
+    assert block.data["_atom_site_type_symbol"] == ["Fe0.331+", "Fe0.334+"]
+    assert dict(
+        zip(
+            block.data["_atom_type_symbol"],
+            map(float, block.data["_atom_type_oxidation_number"]),
+            strict=True,
+        )
+    ) == {"Fe0.331+": 0.331, "Fe0.334+": 0.334}
+    assert list(map(float, block.data["_atom_site_moment.crystalaxis_z"])) == [1e-10, 1e-10]
+
+
+def test_coincident_rows_retain_magnetic_flags() -> None:
+    structure = Structure(
+        Lattice.cubic(4),
+        [{"Fe2+": 0.6}, {"Zn2+": 0.2}],
+        [[0, 0, 0], [0, 0, 0]],
+        site_properties={"magmom": [[0, 0, 0], [0, 0, 0]], "magnetic": [True, False]},
+    )
+    (block,) = CifFile.from_str(str(MCifWriter(structure))).data.values()
+    labels = dict(zip(block.data["_atom_site_type_symbol"], block.data["_atom_site_label"]))
+    assert block.data["_atom_site_moment.label"] == [labels["Fe2+"]]
+    assert list(map(float, block.data["_atom_site_occupancy"])) == [0.6, 0.2]
+
+
+def test_equivalent_constituent_partitions_keep_magnetic_symmetry() -> None:
+    combined = Structure(
+        Lattice.cubic(4),
+        ["Fe", "Fe"],
+        [[0, 0, 0], [0.5, 0.5, 0.5]],
+        site_properties={"magmom": [[0, 0, 2]] * 2},
+    )
+    split = Structure(
+        combined.lattice,
+        [{"Fe": 0.5}, {"Fe": 0.5}, "Fe"],
+        [[0, 0, 0], [0, 0, 0], [0.5, 0.5, 0.5]],
+        site_properties={"magmom": [[0, 0, 2]] * 3},
+    )
+    assert str(MCifWriter(split)) == str(MCifWriter(combined))
+
+
+def test_magmom_spin_axis_preserves_weak_components() -> None:
+    structure = Structure(
+        Lattice.cubic(4),
+        ["Fe"],
+        [[0, 0, 0]],
+        site_properties={"magmom": [Magmom([1e-10, 2e-10, 3e-10], saxis=[1, 0, 0])]},
+    )
+    (block,) = CifFile.from_str(str(MCifWriter(structure))).data.values()
+    (moment,) = zip(
+        *[list(map(float, block.data[f"_atom_site_moment.crystalaxis_{axis}"])) for axis in "xyz"]
+    )
+    # SAXIS=x sends local x to global -z, local y to global y, and local z to global x.
+    np.testing.assert_allclose(moment, [3e-10, 2e-10, -1e-10], atol=1e-25, rtol=0)
+
+
+@pytest.mark.parametrize("order", [(0, 1, 2), (2, 0, 1)])
+def test_ambiguous_coincident_grouping_is_rejected(order) -> None:
+    positions = [[0, 0, 0], [0.0002, 0, 0], [0.0004, 0, 0]]
+    structure = Structure(
+        Lattice.cubic(4),
+        [{"Fe": 0.2}] * 3,
+        [positions[index] for index in order],
+        site_properties={"magmom": [[0, 0, 2]] * 3},
+    )
+    with pytest.raises(ValueError, match="Ambiguous coincident-site grouping"):
+        MCifWriter(structure, symprec=1e-3)
+
+
+@pytest.mark.parametrize("difference", [1e-7, 1e-3])
+def test_shared_site_moment_comparison_uses_mag_symprec(difference) -> None:
+    structure = Structure(
+        Lattice.cubic(4),
+        [{"Fe": 0.6}, {"Mn": 0.3}],
+        [[0, 0, 0]] * 2,
+        site_properties={"magmom": [[0, 0, 2], [0, 0, 2 + difference]]},
+    )
+    with pytest.raises(ValueError, match="Unequal magnetic moments"):
+        MCifWriter(structure, mag_symprec=difference / 10)
+    assert "_atom_site_moment.label" in str(MCifWriter(structure, mag_symprec=difference * 10))
+
+
 @pytest.mark.parametrize(
-    ("selection", "message"),
+    ("flag", "message"),
     [
-        ([], "one selection per site"),
-        ([("Mn",)], "absent species"),
-        ([("Fe", "Fe")], "duplicate species"),
-        ([()], "nonzero moment"),
-        (["Fe"], "sequence of species"),
+        (False, "nonmagnetic row must have a zero moment"),
+        ("true", "boolean flags"),
+        (None, "boolean flags"),
     ],
 )
-def test_rejects_invalid_magnetic_selection(selection, message) -> None:
+def test_rejects_invalid_magnetic_flags(flag, message) -> None:
     structure = Structure(
-        Lattice.cubic(4), ["Fe"], [[0, 0, 0]], site_properties={"magmom": [[0, 0, 2]]}
+        Lattice.cubic(4),
+        ["Fe"],
+        [[0, 0, 0]],
+        site_properties={"magmom": [[0, 0, 2]], "magnetic": [flag]},
     )
     with pytest.raises(ValueError, match=message):
-        MCifWriter(structure, magnetic_species=selection)
+        MCifWriter(structure)
 
 
 @pytest.mark.parametrize(
@@ -326,6 +435,23 @@ def test_rejects_nonfinite_moments(value) -> None:
     )
     with pytest.raises(ValueError, match="finite"):
         MCifWriter(structure)
+
+
+def _constituent_structure(structure: Structure, selections: list[tuple[str, ...]]) -> Structure:
+    compositions, positions, moments, magnetic = [], [], [], []
+    for site, selected in zip(structure, selections, strict=True):
+        for species, occupancy in site.species.items():
+            flag = str(species) in selected
+            compositions.append({species: occupancy})
+            positions.append(site.frac_coords)
+            moments.append(site.properties["magmom"] if flag else np.zeros(3))
+            magnetic.append(flag)
+    return Structure(
+        structure.lattice,
+        compositions,
+        positions,
+        site_properties={"magmom": moments, "magnetic": magnetic},
+    )
 
 
 def _expand_constituent_rows(text: str) -> list[tuple[str, float, np.ndarray, np.ndarray, bool]]:

@@ -3,20 +3,21 @@ structure and its nontrivial spin space group."""
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 
 import numpy as np
 from moyopy import SpaceGroupType
-from pymatgen.core import Composition, Element, Lattice, Structure
-from pymatgen.electronic_structure.core import Magmom
+from pymatgen.core import Element, Lattice, Structure
 from spgrep.utils import NDArrayFloat
 from spinspg.spin import SpinOnlyGroup, SpinOnlyGroupType
 
 from spinforge._cif import (
     _ATOM_SITE_LOOP_HEADER,
     _atom_type_lines,
-    _normalize_site_species,
+    _number,
+    _physical_sites,
     _SiteConstituent,
+    _species_token,
 )
 from spinforge.configuration import SpinSymmetryAdaptedStructure
 from spinforge.msg import MagneticSpaceSubgroup
@@ -25,7 +26,6 @@ from spinforge.ssg import NontrivialSpinSpaceGroup
 from ._format import (
     _collinear_direction_xyz,
     _coplanar_perp_uvw,
-    _fmt,
     _spinframe_p_abc,
     _symmform,
     _uvw_expr,
@@ -77,15 +77,6 @@ class SpinCifWriter:
         spin_rotation.T``. Both proper and improper frames are supported;
         ``None`` uses the identity. The operations and SSA restrictions are
         rotated with the same matrix.
-    site_compositions
-        Full composition of each supercell site, including fractional
-        occupancies and oxidation states. Defaults to the supercell's atomic
-        elements. Cannot be combined with ``site_occupancies``.
-    magnetic_species
-        Species identities selected at each supercell site, as strings such as
-        ``"Fe2+"``. Selected constituents share the site's occupied-atom moment;
-        unselected constituents carry zero. ``None`` selects every constituent.
-        Compositions and selections must be invariant under the SSG operations.
     site_occupancies
         Fractional occupancy per supercell site (``None`` = fully occupied).
         Written as ``_atom_site_occupancy``; must be invariant under the SSG
@@ -97,8 +88,9 @@ class SpinCifWriter:
         ``_parent_space_group`` tags when given.
     atol
         Tolerance for spin-space and translation checks (coefficient
-        snapping, orthogonality). Site matching uses the supercell's own
-        symprec via :meth:`Supercell.site_permutations`.
+        snapping, orthogonality) and absolute legacy occupancy comparisons.
+        Site matching uses the supercell's own symprec via
+        :meth:`Supercell.site_permutations`.
     """
 
     def __init__(
@@ -109,8 +101,6 @@ class SpinCifWriter:
         *,
         spin_only_group: SpinOnlyGroup,
         spin_rotation: NDArrayFloat | None = None,
-        site_compositions: Sequence[Composition | Mapping[str, float]] | None = None,
-        magnetic_species: Sequence[Sequence[str]] | None = None,
         data_name: str = "spinforge",
         parent_space_group_type: SpaceGroupType | None = None,
         site_occupancies: Sequence[float] | NDArrayFloat | None = None,
@@ -125,10 +115,58 @@ class SpinCifWriter:
             data_name=data_name,
             parent_space_group_type=parent_space_group_type,
             site_occupancies=site_occupancies,
-            site_compositions=site_compositions,
-            magnetic_species=magnetic_species,
             atol=atol,
         )
+
+    @classmethod
+    def from_structure(
+        cls,
+        sas: SpinSymmetryAdaptedStructure,
+        nssg: NontrivialSpinSpaceGroup,
+        structure: Structure,
+        *,
+        spin_only_group: SpinOnlyGroup,
+        symprec: float,
+        spin_rotation: NDArrayFloat | None = None,
+        mag_symprec: float | None = None,
+        data_name: str = "spinforge",
+        parent_space_group_type: SpaceGroupType | None = None,
+        atol: float = 1e-5,
+    ) -> SpinCifWriter:
+        """Write full chemistry from constituent rows matched to the SSA sites.
+
+        ``symprec`` bounds Cartesian position and lattice matching. Coincident
+        constituent rows share a physical site, and their selected moments must
+        agree within ``mag_symprec`` (defaulting to ``atol``). The optional
+        boolean ``magnetic`` property defaults to true; false requires zero.
+        A mixed row applies its moment and flag to all constituents. Chemistry
+        and magnetic flags must agree exactly across each SSG orbit.
+
+        An explicit ``mag_symprec`` is an absolute moment tolerance for both
+        the SSA residual and spin-only-group checks. When omitted, these checks
+        retain the array constructor's moment-scale-relative ``atol`` policy.
+        """
+        physical = _physical_sites(
+            structure,
+            symprec=symprec,
+            mag_symprec=atol if mag_symprec is None else mag_symprec,
+        )
+        order = _match_ssa_sites(sas, physical.structure, symprec=symprec)
+        moments = np.asarray(physical.structure.site_properties["magmom"])[order]
+        writer = cls.__new__(cls)
+        writer._build(
+            sas,
+            nssg,
+            moments,
+            spin_only_group=spin_only_group,
+            q_mat=np.eye(3) if spin_rotation is None else np.asarray(spin_rotation, dtype=float),
+            data_name=data_name,
+            parent_space_group_type=parent_space_group_type,
+            constituents=tuple(physical.constituents[index] for index in order),
+            mag_symprec=mag_symprec,
+            atol=atol,
+        )
+        return writer
 
     @classmethod
     def from_oriented(
@@ -139,11 +177,11 @@ class SpinCifWriter:
         msg: MagneticSpaceSubgroup,
         *,
         spin_only_group: SpinOnlyGroup,
-        site_compositions: Sequence[Composition | Mapping[str, float]] | None = None,
-        magnetic_species: Sequence[Sequence[str]] | None = None,
         data_name: str = "spinforge",
         parent_space_group_type: SpaceGroupType | None = None,
         site_occupancies: Sequence[float] | NDArrayFloat | None = None,
+        symprec: float = 1e-4,
+        mag_symprec: float | None = None,
         atol: float = 1e-5,
     ) -> SpinCifWriter:
         """Writer for one ``(structure, msg)`` pair from ``generate_oriented``.
@@ -152,20 +190,41 @@ class SpinCifWriter:
         conjugates the spin parts of the SSG operations by the MSG rotation
         ``msg.Q`` that ``generate_oriented`` applied to them.
         """
-        moments = np.array(
-            [Magmom(m).global_moment for m in structure.site_properties["magmom"]], dtype=float
-        )
-        return cls(
+        if site_occupancies is not None:
+            if any(not site.is_ordered for site in structure):
+                raise ValueError("site_occupancies can only override ordered input")
+            occupancies = _validated_occupancies(site_occupancies, len(structure), [], atol=atol)
+            physical = _physical_sites(
+                structure,
+                symprec=symprec,
+                mag_symprec=atol if mag_symprec is None else mag_symprec,
+            )
+            order = _match_ssa_sites(sas, physical.structure, symprec=symprec)
+            writer = cls.__new__(cls)
+            writer._build(
+                sas,
+                nssg,
+                np.asarray(physical.structure.site_properties["magmom"])[order],
+                spin_only_group=spin_only_group,
+                q_mat=np.asarray(msg.Q, dtype=float),
+                data_name=data_name,
+                parent_space_group_type=parent_space_group_type,
+                constituents=tuple(physical.constituents[index] for index in order),
+                site_occupancies=occupancies[order],
+                mag_symprec=mag_symprec,
+                atol=atol,
+            )
+            return writer
+        return cls.from_structure(
             sas,
             nssg,
-            moments,
+            structure,
             spin_only_group=spin_only_group,
             spin_rotation=np.asarray(msg.Q, dtype=float),
+            symprec=symprec,
+            mag_symprec=mag_symprec,
             data_name=data_name,
             parent_space_group_type=parent_space_group_type,
-            site_occupancies=site_occupancies,
-            site_compositions=site_compositions,
-            magnetic_species=magnetic_species,
             atol=atol,
         )
 
@@ -180,8 +239,8 @@ class SpinCifWriter:
         data_name: str,
         parent_space_group_type: SpaceGroupType | None,
         site_occupancies: Sequence[float] | NDArrayFloat | None = None,
-        site_compositions: Sequence[Composition | Mapping[str, float]] | None = None,
-        magnetic_species: Sequence[Sequence[str]] | None = None,
+        constituents: tuple[tuple[_SiteConstituent, ...], ...] | None = None,
+        mag_symprec: float | None = None,
         atol: float,
     ) -> None:
         positions = np.asarray(sas.supercell.positions)
@@ -198,14 +257,13 @@ class SpinCifWriter:
             or not np.allclose(q_mat @ q_mat.T, np.eye(3), rtol=0, atol=atol)
         ):
             raise ValueError("spin_rotation must be a finite orthogonal 3 by 3 matrix")
-        if site_compositions is not None and site_occupancies is not None:
-            raise ValueError("Use either site_compositions or site_occupancies, not both")
-
         lattice = np.asarray(sas.supercell.basis)
         frame = _crystal_cartesian_frame(lattice)  # columns = spin basis vectors (Cartesian)
 
         oriented_basis = [q_mat @ np.asarray(b).T for b in sas.magnetic_moments_basis]
-        _validate_moments(moments, oriented_basis, spin_only_group, q_mat, atol=atol)
+        _validate_moments(
+            moments, oriented_basis, spin_only_group, q_mat, atol=atol, mag_symprec=mag_symprec
+        )
 
         prim_operations = _nontrivial_operations(
             nssg.nontrivial_coset, nssg.invariant_rotations, nssg.invariant_translations
@@ -226,29 +284,36 @@ class SpinCifWriter:
             [t + t2 for _, t, _ in prim_operations for t2 in spin_translations],
         )
         orbits = _orbit_partition(len(positions), permutations)
-        occupancies = _validated_occupancies(
-            site_occupancies, len(positions), permutations, atol=atol
-        )
-        compositions = (
-            [Composition(composition) for composition in site_compositions]
-            if site_compositions is not None
-            else [
-                Composition({Element.from_Z(number): occupancy})
+        if constituents is None:
+            occupancies = _validated_occupancies(
+                site_occupancies, len(positions), permutations, atol=atol
+            )
+            constituents = tuple(
+                (_SiteConstituent(Element.from_Z(number), occupancy, True),)
                 for number, occupancy in zip(sas.supercell.numbers, occupancies, strict=True)
-            ]
-        )
-        constituents = _normalize_site_species(compositions, magnetic_species, moments)
-        signatures = [
-            tuple((str(c.species), c.occupancy, c.magnetic) for c in site) for site in constituents
-        ]
-        for permutation in permutations:
-            if any(
-                signatures[index] != signatures[int(image)]
-                for index, image in enumerate(permutation)
-            ):
-                raise ValueError(
-                    "site_compositions and magnetic_species must be invariant under the SSG operations"
+            )
+        else:
+            if site_occupancies is not None:
+                occupancies = _validated_occupancies(
+                    site_occupancies, len(positions), permutations, atol=atol
                 )
+                constituents = tuple(
+                    tuple(_SiteConstituent(row.species, amount, row.magnetic) for row in site)
+                    for site, amount in zip(constituents, occupancies, strict=True)
+                )
+                signatures = [
+                    tuple((row.species, row.magnetic) for row in site) for site in constituents
+                ]
+            else:
+                signatures = constituents
+            for permutation in permutations:
+                if any(
+                    signatures[index] != signatures[int(image)]
+                    for index, image in enumerate(permutation)
+                ):
+                    raise ValueError(
+                        "Chemistry and magnetic flags must be invariant under the SSG operations"
+                    )
         collinear_xyz = _collinear_direction_xyz(spin_only_group, q_mat, lattice)
         coplanar_uvw = _coplanar_perp_uvw(spin_only_group, q_mat, frame)
 
@@ -281,6 +346,21 @@ class SpinCifWriter:
             f.write(self._scif_str)
 
 
+def _match_ssa_sites(
+    sas: SpinSymmetryAdaptedStructure, structure: Structure, *, symprec: float
+) -> np.ndarray:
+    lattice = np.asarray(sas.supercell.basis)
+    if np.any(np.linalg.norm(structure.lattice.matrix - lattice, axis=1) > symprec):
+        raise ValueError("structure lattice does not match the SSA supercell")
+    matches = (
+        Lattice(lattice).get_all_distances(structure.frac_coords, sas.supercell.positions)
+        <= symprec
+    )
+    if not np.all(matches.sum(axis=0) == 1) or not np.all(matches.sum(axis=1) == 1):
+        raise ValueError("structure sites must match the SSA supercell uniquely")
+    return np.argmax(matches, axis=0)
+
+
 def _validate_moments(
     moments: NDArrayFloat,
     oriented_basis: list[np.ndarray],
@@ -288,6 +368,7 @@ def _validate_moments(
     q_mat: NDArrayFloat,
     *,
     atol: float,
+    mag_symprec: float | None = None,
 ) -> None:
     """Fail fast on caller mismatches, in O(n).
 
@@ -306,7 +387,8 @@ def _validate_moments(
     basis_matrix = np.stack([b.T.reshape(-1) for b in oriented_basis], axis=1)
     coefficients, *_ = np.linalg.lstsq(basis_matrix, target, rcond=None)
     residual = np.linalg.norm(basis_matrix @ coefficients - target)
-    if residual > atol * scale:
+    tolerance = atol * scale if mag_symprec is None else mag_symprec
+    if residual > tolerance:
         raise ValueError(
             f"magnetic_moments are not a combination of the SSA basis "
             f"(residual {residual:.3e}); check that they come from this "
@@ -323,7 +405,7 @@ def _validate_moments(
         deviation = np.abs(moments @ axis)  # in the plane normal to axis
     else:
         return
-    if np.any(deviation > atol * scale):
+    if np.any(deviation > tolerance):
         raise ValueError(
             f"magnetic_moments are incompatible with the "
             f"{spin_only_group.spin_only_group_type} spin-only axis {axis}"
@@ -358,7 +440,7 @@ def _validated_occupancies(
         raise ValueError(f"site_occupancies must lie in (0, 1], got {occupancies.tolist()}")
     for permutation in permutations:
         permuted = occupancies[np.asarray(permutation, dtype=int)]
-        if not np.allclose(permuted, occupancies, atol=atol):
+        if not np.allclose(permuted, occupancies, atol=atol, rtol=0):
             raise ValueError(
                 "site_occupancies are not invariant under the SSG operations; "
                 "symmetry-related sites must share one occupancy."
@@ -405,12 +487,12 @@ def _format_scif(
     a, b, c, alpha, beta, gamma = Lattice(lattice).parameters
     lines += [
         "",
-        f"_cell_length_a    {a:.6f}",
-        f"_cell_length_b    {b:.6f}",
-        f"_cell_length_c    {c:.6f}",
-        f"_cell_angle_alpha {alpha:.6f}",
-        f"_cell_angle_beta  {beta:.6f}",
-        f"_cell_angle_gamma {gamma:.6f}",
+        f"_cell_length_a    {_number(a)}",
+        f"_cell_length_b    {_number(b)}",
+        f"_cell_length_c    {_number(c)}",
+        f"_cell_angle_alpha {_number(alpha)}",
+        f"_cell_angle_beta  {_number(beta)}",
+        f"_cell_angle_gamma {_number(gamma)}",
         "",
         "loop_",
         "_space_group_symop_spin_operation.id",
@@ -445,8 +527,8 @@ def _format_scif(
             if constituent.magnetic:
                 labels.append(label)
             lines.append(
-                f"{label} {constituent.species} {_fmt(fx)} {_fmt(fy)} {_fmt(fz)} "
-                f"{constituent.occupancy:.12g} {multiplicity}"
+                f"{label} {_species_token(constituent.species)} {_number(fx)} {_number(fy)} {_number(fz)} "
+                f"{_number(constituent.occupancy)} {multiplicity}"
             )
         magnetic_labels.append(labels)
 
@@ -455,11 +537,11 @@ def _format_scif(
         orbits, magnetic_labels, site_moment_subspaces, strict=True
     ):
         m_uvw = frame.T @ moments[rep]
-        components = [_fmt(x) for x in m_uvw]
+        components = [_number(x) for x in m_uvw]
         symmform = _symmform(subspace, atol=atol)
         for label in labels:
             moment_lines.append(
-                f"{label} {' '.join(components)} {symmform} {_fmt(float(np.linalg.norm(m_uvw)))}"
+                f"{label} {' '.join(components)} {symmform} {_number(float(np.linalg.norm(m_uvw)))}"
             )
     if moment_lines:
         lines += [
