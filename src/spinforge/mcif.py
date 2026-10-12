@@ -1,12 +1,14 @@
 """Write magnetic structures as mcif files (BNS/MAGNDATA convention).
 
-Reading needs no local code: ``pymatgen.core.Structure.from_file`` handles
-mcif, and its symmetry expansion of ``_atom_site_moment.crystalaxis_*``
+For single-species sites, ``pymatgen.core.Structure.from_file`` handles mcif,
+and its symmetry expansion of ``_atom_site_moment.crystalaxis_*``
 components is correct as of pymatgen-core v2026.7.16
 (materialsproject/pymatgen-core#76): moments are converted to Cartesian before
 applying an operation, so |m| is preserved even when an operation mixes
 unequal or non-orthogonal axes (e.g. hexagonal settings; see
 materialsproject/pymatgen-core#76 for the old failure mode).
+Mixed-species files use constituent atom rows, which pymatgen's magnetic
+structure reader does not currently support.
 
 :class:`MCifWriter` has no upstream equivalent (``CifWriter(write_magmoms=True)``
 dumps every atom in P1 with no magnetic operations).
@@ -21,10 +23,16 @@ from moyopy import (
     NonCollinearMagneticCell,
 )
 from pymatgen.core import Structure
-from pymatgen.core.operations import MagSymmOp
-from pymatgen.electronic_structure.core import Magmom
 
-from spinforge._cif import _ATOM_SITE_LOOP_HEADER
+from spinforge._cif import (
+    _ATOM_SITE_LOOP_HEADER,
+    _atom_type_lines,
+    _number,
+    _physical_sites,
+    _SiteConstituent,
+    _species_token,
+    _xyzt_string,
+)
 
 __all__ = [
     "MCifWriter",
@@ -43,8 +51,7 @@ class MCifWriter:
     magnetic operations -- this finds the magnetic space group of ``struct`` with
     moyopy and writes the asymmetric unit plus the
     ``_space_group_symop_magn_operation.xyz`` /
-    ``_space_group_symop_magn_centering.xyz`` loops, so the file round-trips
-    through ``pymatgen.core.Structure.from_file``.
+    ``_space_group_symop_magn_centering.xyz`` loops.
 
     The structure is symmetrized in its own input setting (the basis is not
     standardized). ``struct`` must carry a ``magmom`` site property (pymatgen
@@ -52,12 +59,16 @@ class MCifWriter:
     ``_atom_site_moment.crystalaxis_*`` in the unit-axis convention read back by
     ``CifParser`` (``m = mx*a_hat + my*b_hat + mz*c_hat``).
 
-    Partial occupancy is preserved: each site's fractional occupancy enters the
-    moyopy equivalence label (so a 0.79-occupied site is never folded into a fully
-    occupied orbit) and is written as an ``_atom_site_occupancy`` column. Only
-    single-species sites are supported; a mixed solid-solution site (two species
-    sharing one position) raises ``NotImplementedError``, since moyopy cannot
-    symmetrize it.
+    Each constituent is written as an atom row with its occupancy and full species
+    identity, including oxidation state. Compositions and magnetic flags enter
+    the moyopy equivalence labels, so symmetry cannot exchange chemically distinct
+    sites. Selected constituents share the site's occupied-atom moment; unselected
+    constituents have zero moment. Occupancy never scales the written moment.
+    The optional boolean ``magnetic`` site property defaults to true. A false
+    flag requires a zero moment; a true flag retains a moment row even for zero.
+    A mixed site applies its moment and flag to all its species. Use coincident
+    constituent rows for partial magnetic selection. Their selected moments must
+    agree within ``mag_symprec`` (which defaults to ``symprec`` as in moyopy).
 
     Parameters
     ----------
@@ -65,6 +76,8 @@ class MCifWriter:
         Magnetic structure with a ``magmom`` site property.
     symprec, mag_symprec
         moyopy symmetry-search tolerances (basis units / moment units).
+        ``symprec`` also bounds the Cartesian displacement introduced when
+        snapping translations to the crystallographic fraction grid.
     """
 
     def __init__(
@@ -74,14 +87,17 @@ class MCifWriter:
         *,
         mag_symprec: float | None = None,
     ) -> None:
-        if "magmom" not in struct.site_properties:
-            raise ValueError("structure must have a 'magmom' site property to write an mcif")
+        physical = _physical_sites(
+            struct, symprec=symprec, mag_symprec=symprec if mag_symprec is None else mag_symprec
+        )
+        struct = physical.structure
         basis = struct.lattice.matrix
-        moments = np.array([Magmom(m).global_moment for m in struct.site_properties["magmom"]])
+        moments = np.asarray(struct.site_properties["magmom"])
+        site_species = physical.constituents
         cell = NonCollinearMagneticCell(
             basis=basis.tolist(),
             positions=struct.frac_coords.tolist(),
-            numbers=self._composition_numbers(struct),
+            numbers=self._composition_numbers(site_species),
             magnetic_moments=moments.tolist(),
         )
         dataset = MoyoNonCollinearMagneticDataset(
@@ -89,13 +105,11 @@ class MCifWriter:
         )
         ops = dataset.magnetic_operations
         op_strings = [
-            MagSymmOp.from_rotation_and_translation_and_time_reversal(
-                rotation_matrix=np.array(rot),
-                translation_vec=self._snap_translation(trans),
-                time_reversal=-1 if rev else 1,
+            _xyzt_string(
+                np.array(rot),
+                self._snap_translation(trans, basis, symprec=symprec),
+                -1 if rev else 1,
             )
-            .as_xyzt_str()
-            .replace(" ", "")  # CIF loop columns are whitespace-delimited; xyzt must be one token
             for rot, trans, rev in zip(ops.rotations, ops.translations, ops.time_reversals)
         ]
 
@@ -104,7 +118,9 @@ class MCifWriter:
         inv_unit_axes = np.linalg.inv(unit_axes)  # crystalaxis comps = m_cart @ inv(unit_axes)
 
         bns = MagneticSpaceGroupType(dataset.uni_number).bns_number
-        self._mcif_str = self._format_mcif(struct, reps, op_strings, moments, inv_unit_axes, bns)
+        self._mcif_str = self._format_mcif(
+            struct, site_species, reps, op_strings, moments, inv_unit_axes, bns
+        )
 
     def __str__(self) -> str:
         """The symmetrized mcif as a string."""
@@ -118,13 +134,12 @@ class MCifWriter:
     @staticmethod
     def _format_mcif(
         structure: Structure,
+        site_species: tuple[tuple[_SiteConstituent, ...], ...],
         reps: list[int],
         op_strings: list[str],
         moments: np.ndarray,
         inv_unit_axes: np.ndarray,
         bns: str,
-        *,
-        atol: float = 1e-6,
     ) -> str:
         """Assemble symmetrized-mcif text from the asymmetric unit and magnetic operations."""
         a, b, c = structure.lattice.abc
@@ -132,13 +147,15 @@ class MCifWriter:
         lines = [
             "# Symmetrized magnetic CIF written by spinforge.mcif.MCifWriter",
             "data_magnetic_structure",
+            f"_chemical_formula_sum '{structure.composition.element_composition.formula}'",
             f"_space_group_magn.number_BNS {bns}",
-            f"_cell_length_a {a:.6f}",
-            f"_cell_length_b {b:.6f}",
-            f"_cell_length_c {c:.6f}",
-            f"_cell_angle_alpha {alpha:.6f}",
-            f"_cell_angle_beta {beta:.6f}",
-            f"_cell_angle_gamma {gamma:.6f}",
+            f"_cell_length_a {_number(a)}",
+            f"_cell_length_b {_number(b)}",
+            f"_cell_length_c {_number(c)}",
+            f"_cell_angle_alpha {_number(alpha)}",
+            f"_cell_angle_beta {_number(beta)}",
+            f"_cell_angle_gamma {_number(gamma)}",
+            *_atom_type_lines(site_species),
             "",
             "loop_",
             "_space_group_symop_magn_operation.id",
@@ -153,22 +170,21 @@ class MCifWriter:
             "1 x,y,z,+1",
             *_ATOM_SITE_LOOP_HEADER,
         ]
-        labels: dict[int, str] = {}
         counts: dict[str, int] = {}
-        for idx in reps:
-            symbol, occ = MCifWriter._single_species(structure[idx])
-            counts[symbol] = counts.get(symbol, 0) + 1
-            label = f"{symbol}{counts[symbol]}"
-            labels[idx] = label
-            fx, fy, fz = structure[idx].frac_coords
-            lines.append(f"{label} {symbol} {fx:.6f} {fy:.6f} {fz:.6f} {occ:.6f}")
-
         moment_lines = []
         for idx in reps:
+            fx, fy, fz = structure[idx].frac_coords
             comps = moments[idx] @ inv_unit_axes
-            if np.linalg.norm(comps) <= atol:
-                continue
-            moment_lines.append(f"{labels[idx]} {comps[0]:.6f} {comps[1]:.6f} {comps[2]:.6f}")
+            for constituent in site_species[idx]:
+                symbol = constituent.species.symbol
+                counts[symbol] = counts.get(symbol, 0) + 1
+                label = f"{symbol}{counts[symbol]}"
+                lines.append(
+                    f"{label} {_species_token(constituent.species)} "
+                    f"{_number(fx)} {_number(fy)} {_number(fz)} {_number(constituent.occupancy)}"
+                )
+                if constituent.magnetic:
+                    moment_lines.append(f"{label} {' '.join(_number(value) for value in comps)}")
         if moment_lines:
             lines += [
                 "",
@@ -183,49 +199,25 @@ class MCifWriter:
         return "\n".join(lines)
 
     @staticmethod
-    def _composition_numbers(structure: Structure) -> list[int]:
-        """Equivalence labels for moyopy that fold occupancy into the site identity.
-
-        moyopy treats ``numbers`` as opaque per-site equivalence classes. Encoding the
-        full ``(Z, occupancy)`` signature means a magnetic operation may only map a site
-        onto another with the *same* species and occupancy, so partially occupied sites
-        are never merged into a fully occupied orbit.
-        """
+    def _composition_numbers(site_species: tuple[tuple[_SiteConstituent, ...], ...]) -> list[int]:
+        """moyopy equivalence labels for complete compositions and magnetic selections."""
         signatures: dict[tuple, int] = {}
         numbers = []
-        for site in structure:
-            signature = tuple(sorted((sp.Z, round(occ, 6)) for sp, occ in site.species.items()))
+        for site in site_species:
+            signature = tuple((row.species, row.occupancy, row.magnetic) for row in site)
             numbers.append(signatures.setdefault(signature, len(signatures) + 1))
         return numbers
 
     @staticmethod
-    def _single_species(site) -> tuple[str, float]:
-        """Return the ``(symbol, occupancy)`` of a single-species site.
-
-        A mixed solid-solution site (two species sharing one position) cannot be
-        symmetrized by moyopy nor written as one mcif ``_atom_site_*`` row, so it is
-        rejected explicitly rather than silently mangled.
-        """
-        items = list(site.species.items())
-        if len(items) != 1:
-            raise NotImplementedError(
-                f"Mixed-occupancy site {site.frac_coords} has species {site.species}; "
-                "only single-species (optionally partial) occupancy is supported"
-            )
-        element, occ = items[0]
-        return element.symbol, float(occ)
-
-    @staticmethod
     def _snap_translation(
-        trans: list[float], *, denom: int = 24, atol: float = 1e-3
+        trans: list[float], basis: np.ndarray, *, symprec: float, denom: int = 24
     ) -> np.ndarray:
-        """Snap a fractional translation to the nearest k/denom when within atol.
+        """Snap a fractional translation when its Cartesian change is within symprec.
 
-        moyopy's tolerant symmetry search can return translations carrying ~1e-6 noise
-        on a fitted (numerically imperfect) structure. The crystallographic translations
-        here are multiples of 1/2, 1/3, 1/4, 1/6 (all on the 1/24 grid), so snapping
-        removes the noise without altering a genuine translation.
+        The 1/24 grid includes usual crystallographic fractions. General-origin
+        translations need not lie on that grid, so preserve the complete vector
+        unless snapping it respects the caller's Cartesian symmetry tolerance.
         """
         t = np.array(trans, dtype=float) % 1.0
         snapped = np.round(t * denom) / denom
-        return np.where(np.abs(snapped - t) <= atol, snapped, t)
+        return snapped if np.linalg.norm((snapped - t) @ basis) <= symprec else t

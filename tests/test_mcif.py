@@ -10,7 +10,9 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from pymatgen.core import Structure
+from pymatgen.core import Composition, DummySpecies, Lattice, Species, Structure
+from pymatgen.electronic_structure.core import Magmom
+from pymatgen.io.cif import CifFile, CifParser
 
 from spinforge.mcif import MCifWriter
 from spinforge.testing import get_magnetic_space_group_type
@@ -119,6 +121,41 @@ def test_mcif_writer_str_matches_write_file(mcif_path: str, tmp_path) -> None:
     assert out.read_text() == str(writer)
 
 
+@pytest.mark.parametrize("symprec", [1e-8, 3e-3, 1e-2])
+def test_translation_snapping_respects_cartesian_symprec(symprec) -> None:
+    structure = Structure(
+        Lattice.from_parameters(4, 5, 6, 70, 80, 75),
+        ["Fe"],
+        [[0.0002, 0.0002, 0.0002]],
+        site_properties={"magmom": [[0, 0, 2]]},
+    )
+    text = str(MCifWriter(structure, symprec=symprec))
+    (block,) = CifFile.from_str(text).data.values()
+    operations = CifParser.from_str(text).get_magsymops(block)
+    (site,) = structure
+    for operation in operations:
+        displacement = operation.operate(site.frac_coords) - site.frac_coords
+        displacement -= np.rint(displacement)
+        assert np.linalg.norm(displacement @ structure.lattice.matrix) <= symprec
+
+
+def test_general_origin_translation_retains_requested_precision() -> None:
+    structure = Structure(
+        Lattice.from_parameters(4, 5, 6, 70, 80, 75),
+        ["Fe"],
+        [[0.123456789, 0.234567891, 0.345678912]],
+        site_properties={"magmom": [[0, 0, 2]]},
+    )
+    text = str(MCifWriter(structure, symprec=1e-12))
+    (block,) = CifFile.from_str(text).data.values()
+    (site,) = structure
+    for operation in CifParser.from_str(text).get_magsymops(block):
+        distance, _ = structure.lattice.get_distance_and_image(
+            site.frac_coords, operation.operate(site.frac_coords)
+        )
+        assert distance <= 1e-12
+
+
 def test_save_requires_magmom_property() -> None:
     from pymatgen.core import Lattice, Structure
 
@@ -147,7 +184,8 @@ def test_partial_occupancy_roundtrips(tmp_path) -> None:
 
     text = out.read_text()
     assert "_atom_site_occupancy" in text
-    assert "0.800000" in text  # the partial Mn occupancy survived into the asym unit
+    data = next(iter(CifFile.from_str(text).data.values())).data
+    assert 0.8 in map(float, data["_atom_site_occupancy"])
 
     reloaded = Structure.from_file(str(out))
     mn_occupancies = sorted(
@@ -160,15 +198,320 @@ def test_partial_occupancy_roundtrips(tmp_path) -> None:
     assert sum(abs(occ - 0.8) < 1e-6 for occ in mn_occupancies) == 1
 
 
-def test_save_rejects_mixed_solid_solution() -> None:
-    from pymatgen.core import Lattice, Structure
-    from pymatgen.electronic_structure.core import Magmom
-
+def test_mixed_site_retains_minority_species_and_occupied_atom_moment() -> None:
     mixed = Structure(
-        Lattice.cubic(4.0),
-        [{"Mn": 0.5, "Ge": 0.5}],
-        [[0, 0, 0]],
-        site_properties={"magmom": [Magmom([0, 0, 2.0])]},
+        Lattice.hexagonal(4.0, 6.0),
+        [{"Fe2+": 0.2, "Zn2+": 0.7}, {"Zn2+": 0.7, "Fe2+": 0.2}],
+        [[0, 0, 0], [0, 0, 0.5]],
+        site_properties={"magmom": [[1, 2, 3], [-1, -2, -3]]},
     )
-    with pytest.raises(NotImplementedError, match="single-species"):
-        MCifWriter(mixed)
+    text = str(MCifWriter(_constituent_structure(mixed, [("Fe2+",), ("Fe2+",)])))
+    images = _expand_constituent_rows(text)
+    assert len(images) == 4
+    for symbol, occupancy, position, moment, selected in images:
+        is_iron = symbol == "Fe2+"
+        assert symbol in {"Fe2+", "Zn2+"}
+        assert occupancy == (0.2 if is_iron else 0.7)
+        assert selected == is_iron
+        expected = np.array([1, 2, 3]) * (1 if abs(position[2]) < 1e-5 else -1)
+        assert np.allclose(moment, expected if is_iron else 0, atol=2e-6)
+    # Reordering the composition mapping cannot alter the exported constituent model.
+    block = next(iter(CifFile.from_str(text).data.values())).data
+    assert Composition(block["_chemical_formula_sum"]).as_dict() == {"Fe": 0.4, "Zn": 1.4}
+    assert len(block["_atom_site_label"]) == 2
+    assert len(block["_atom_site_moment.label"]) == 1
+
+
+@pytest.mark.parametrize("moment", [[0, 0, 2], [0, 0, 0]])
+def test_symmetry_preserves_constituent_selection_even_for_zero_moments(moment) -> None:
+    structure = Structure(
+        Lattice.cubic(4),
+        [{"Fe": 0.5, "Mn": 0.5}] * 2,
+        [[0, 0, 0], [0, 0, 0.5]],
+        site_properties={"magmom": [moment, moment]},
+    )
+    text = str(MCifWriter(_constituent_structure(structure, [("Fe",), ("Mn",)])))
+    block = next(iter(CifFile.from_str(text).data.values())).data
+    assert len(block["_atom_site_label"]) == 4
+    assert len(block["_atom_site_moment.label"]) == 2
+    images = _expand_constituent_rows(text)
+    assert len(images) == 4
+    for symbol, _, position, vector, selected in images:
+        expected_selected = symbol == ("Fe" if abs(position[2]) < 1e-5 else "Mn")
+        assert selected == expected_selected
+        assert np.allclose(vector, moment if selected else 0)
+
+
+def test_oxidation_states_and_neutral_elements_remain_distinct() -> None:
+    structure = Structure(
+        Lattice.cubic(4),
+        [{"Fe": 0.25, "Fe0+": 0.25, "Fe2+": 0.5}],
+        [[0, 0, 0]],
+        site_properties={"magmom": [[0, 0, 2]]},
+    )
+    text = str(MCifWriter(_constituent_structure(structure, [("Fe2+",)])))
+    data = next(iter(CifFile.from_str(text).data.values())).data
+    assert set(data["_atom_site_type_symbol"]) == {"Fe", "Fe0+", "Fe2+"}
+    assert dict(zip(data["_atom_type_symbol"], data["_atom_type_oxidation_number"])) == {
+        "Fe0+": "0",
+        "Fe2+": "2",
+    }
+    assert len(data["_atom_site_moment.label"]) == 1
+
+
+def test_ionic_single_species_roundtrips_with_pymatgen() -> None:
+    structure = Structure(
+        Lattice.cubic(4),
+        [{"Fe2+": 0.7}],
+        [[0, 0, 0]],
+        site_properties={"magmom": [[0, 0, 3]]},
+    )
+    parser = CifParser.from_str(str(MCifWriter(structure)))
+    (data,) = parser.as_dict().values()
+    assert Composition(data["_chemical_formula_sum"]) == Composition({"Fe": 0.7})
+    (reloaded,) = parser.parse_structures(primitive=False)
+    (site,) = reloaded
+    assert site.species == Composition({"Fe2+": 0.7})
+    assert np.allclose(Magmom(site.properties["magmom"]).global_moment, [0, 0, 3])
+
+
+def test_oxidation_state_decorations_constrain_symmetry() -> None:
+    structure = Structure(
+        Lattice.cubic(4),
+        ["Fe2+", "Fe3+"],
+        [[0, 0, 0], [0, 0, 0.5]],
+        site_properties={"magmom": [[0, 0, 2], [0, 0, 2]]},
+    )
+    images = _expand_constituent_rows(str(MCifWriter(structure)))
+    assert len(images) == 2
+    assert {symbol for symbol, *_ in images} == {"Fe2+", "Fe3+"}
+
+
+def test_small_minority_occupancy_is_not_rounded_to_zero() -> None:
+    structure = Structure(
+        Lattice.cubic(4),
+        [{"Fe": 1e-7, "Zn": 0.9}],
+        [[0, 0, 0]],
+        site_properties={"magmom": [[0, 0, 2]]},
+    )
+    images = _expand_constituent_rows(
+        str(MCifWriter(_constituent_structure(structure, [("Fe",)])))
+    )
+    (iron,) = (row for row in images if row[0] == "Fe")
+    assert iron[1] == 1e-7
+    assert np.allclose(iron[3], [0, 0, 2])
+
+
+def test_fractional_oxidation_states_and_weak_moments_are_lossless() -> None:
+    structure = Structure(
+        Lattice.cubic(4),
+        [{Species("Fe", 0.331): 0.4, Species("Fe", 0.334): 0.5}],
+        [[0, 0, 0]],
+        site_properties={"magmom": [[0, 0, 1e-10]]},
+    )
+    (block,) = CifFile.from_str(str(MCifWriter(structure))).data.values()
+    assert block.data["_atom_site_type_symbol"] == ["Fe0.331+", "Fe0.334+"]
+    assert dict(
+        zip(
+            block.data["_atom_type_symbol"],
+            map(float, block.data["_atom_type_oxidation_number"]),
+            strict=True,
+        )
+    ) == {"Fe0.331+": 0.331, "Fe0.334+": 0.334}
+    assert list(map(float, block.data["_atom_site_moment.crystalaxis_z"])) == [1e-10, 1e-10]
+
+
+def test_coincident_rows_retain_magnetic_flags() -> None:
+    structure = Structure(
+        Lattice.cubic(4),
+        [{"Fe2+": 0.6}, {"Zn2+": 0.2}],
+        [[0, 0, 0], [0, 0, 0]],
+        site_properties={"magmom": [[0, 0, 0], [0, 0, 0]], "magnetic": [True, False]},
+    )
+    (block,) = CifFile.from_str(str(MCifWriter(structure))).data.values()
+    labels = dict(zip(block.data["_atom_site_type_symbol"], block.data["_atom_site_label"]))
+    assert block.data["_atom_site_moment.label"] == [labels["Fe2+"]]
+    assert list(map(float, block.data["_atom_site_occupancy"])) == [0.6, 0.2]
+
+
+def test_equivalent_constituent_partitions_keep_magnetic_symmetry() -> None:
+    combined = Structure(
+        Lattice.cubic(4),
+        ["Fe", "Fe"],
+        [[0, 0, 0], [0.5, 0.5, 0.5]],
+        site_properties={"magmom": [[0, 0, 2]] * 2},
+    )
+    split = Structure(
+        combined.lattice,
+        [{"Fe": 0.5}, {"Fe": 0.5}, "Fe"],
+        [[0, 0, 0], [0, 0, 0], [0.5, 0.5, 0.5]],
+        site_properties={"magmom": [[0, 0, 2]] * 3},
+    )
+    assert str(MCifWriter(split)) == str(MCifWriter(combined))
+
+
+def test_magmom_spin_axis_preserves_weak_components() -> None:
+    structure = Structure(
+        Lattice.cubic(4),
+        ["Fe"],
+        [[0, 0, 0]],
+        site_properties={"magmom": [Magmom([1e-10, 2e-10, 3e-10], saxis=[1, 0, 0])]},
+    )
+    (block,) = CifFile.from_str(str(MCifWriter(structure))).data.values()
+    (moment,) = zip(
+        *[list(map(float, block.data[f"_atom_site_moment.crystalaxis_{axis}"])) for axis in "xyz"]
+    )
+    # SAXIS=x sends local x to global -z, local y to global y, and local z to global x.
+    np.testing.assert_allclose(moment, [3e-10, 2e-10, -1e-10], atol=1e-25, rtol=0)
+
+
+@pytest.mark.parametrize("order", [(0, 1, 2), (2, 0, 1)])
+def test_ambiguous_coincident_grouping_is_rejected(order) -> None:
+    positions = [[0, 0, 0], [0.0002, 0, 0], [0.0004, 0, 0]]
+    structure = Structure(
+        Lattice.cubic(4),
+        [{"Fe": 0.2}] * 3,
+        [positions[index] for index in order],
+        site_properties={"magmom": [[0, 0, 2]] * 3},
+    )
+    with pytest.raises(ValueError, match="Ambiguous coincident-site grouping"):
+        MCifWriter(structure, symprec=1e-3)
+
+
+@pytest.mark.parametrize("difference", [1e-7, 1e-3])
+def test_shared_site_moment_comparison_uses_mag_symprec(difference) -> None:
+    structure = Structure(
+        Lattice.cubic(4),
+        [{"Fe": 0.6}, {"Mn": 0.3}],
+        [[0, 0, 0]] * 2,
+        site_properties={"magmom": [[0, 0, 2], [0, 0, 2 + difference]]},
+    )
+    with pytest.raises(ValueError, match="Unequal magnetic moments"):
+        MCifWriter(structure, mag_symprec=difference / 10)
+    assert "_atom_site_moment.label" in str(MCifWriter(structure, mag_symprec=difference * 10))
+
+
+@pytest.mark.parametrize(
+    ("flag", "message"),
+    [
+        (False, "nonmagnetic row must have a zero moment"),
+        ("true", "boolean flags"),
+        (None, "boolean flags"),
+    ],
+)
+def test_rejects_invalid_magnetic_flags(flag, message) -> None:
+    structure = Structure(
+        Lattice.cubic(4),
+        ["Fe"],
+        [[0, 0, 0]],
+        site_properties={"magmom": [[0, 0, 2]], "magnetic": [flag]},
+    )
+    with pytest.raises(ValueError, match=message):
+        MCifWriter(structure)
+
+
+@pytest.mark.parametrize(
+    ("composition", "exception", "message"),
+    [
+        (Composition({"Fe": -0.2}, allow_negative=True), ValueError, "positive"),
+        (Composition({"Fe": np.nan}), ValueError, "at least one species"),
+        (Composition({DummySpecies("X"): 1}), TypeError, "Unsupported species"),
+        (Composition({Species("Fe", None): 1}), ValueError, "Unsupported species"),
+        (Composition({Species("Fe", 2, spin=1): 1}), ValueError, "Unsupported species"),
+    ],
+)
+def test_rejects_invalid_constituents(composition, exception, message) -> None:
+    structure = Structure(
+        Lattice.cubic(4), [composition], [[0, 0, 0]], site_properties={"magmom": [[0, 0, 2]]}
+    )
+    with pytest.raises(exception, match=message):
+        MCifWriter(structure)
+
+
+@pytest.mark.parametrize("value", [np.nan, np.inf])
+def test_rejects_nonfinite_moments(value) -> None:
+    structure = Structure(
+        Lattice.cubic(4), ["Fe"], [[0, 0, 0]], site_properties={"magmom": [[0, 0, value]]}
+    )
+    with pytest.raises(ValueError, match="finite"):
+        MCifWriter(structure)
+
+
+def _constituent_structure(structure: Structure, selections: list[tuple[str, ...]]) -> Structure:
+    compositions, positions, moments, magnetic = [], [], [], []
+    for site, selected in zip(structure, selections, strict=True):
+        for species, occupancy in site.species.items():
+            flag = str(species) in selected
+            compositions.append({species: occupancy})
+            positions.append(site.frac_coords)
+            moments.append(site.properties["magmom"] if flag else np.zeros(3))
+            magnetic.append(flag)
+    return Structure(
+        structure.lattice,
+        compositions,
+        positions,
+        site_properties={"magmom": moments, "magnetic": magnetic},
+    )
+
+
+def _expand_constituent_rows(text: str) -> list[tuple[str, float, np.ndarray, np.ndarray, bool]]:
+    """Read CIF tokens and expand each constituent independently of the writer."""
+    parser = CifParser.from_str(text)
+    block = next(iter(CifFile.from_str(text).data.values()))
+    data = block.data
+    lattice = Lattice.from_parameters(
+        *[float(data[f"_cell_length_{axis}"]) for axis in ("a", "b", "c")],
+        *[float(data[f"_cell_angle_{axis}"]) for axis in ("alpha", "beta", "gamma")],
+    )
+    moments = dict(
+        zip(
+            data.get("_atom_site_moment.label", []),
+            zip(*[data.get(f"_atom_site_moment.crystalaxis_{axis}", []) for axis in "xyz"]),
+        )
+    )
+    images = []
+    for label, symbol, x, y, z, occupancy in zip(
+        *[
+            data[name]
+            for name in (
+                "_atom_site_label",
+                "_atom_site_type_symbol",
+                "_atom_site_fract_x",
+                "_atom_site_fract_y",
+                "_atom_site_fract_z",
+                "_atom_site_occupancy",
+            )
+        ]
+    ):
+        position = np.array([x, y, z], dtype=float)
+        mx, my, mz = moments.get(label, (0, 0, 0))
+        moment = Magmom.from_moment_relative_to_crystal_axes(
+            (float(mx), float(my), float(mz)), lattice
+        ).global_moment
+        for operation in parser.get_magsymops(block):
+            new_position = operation.operate(position) % 1
+            cartesian_rotation = (
+                lattice.matrix.T @ operation.rotation_matrix @ np.linalg.inv(lattice.matrix.T)
+            )
+            new_moment = (
+                np.linalg.det(cartesian_rotation)
+                * operation.time_reversal
+                * cartesian_rotation
+                @ moment
+            )
+            matches = [
+                row
+                for row in images
+                if row[0] == symbol
+                and np.allclose(row[2] - new_position, np.rint(row[2] - new_position), atol=1e-5)
+            ]
+            if matches:
+                (match,) = matches
+                assert match[1] == float(occupancy)
+                assert np.allclose(match[3], new_moment, atol=2e-6)
+                assert match[4] == (label in moments)
+            else:
+                images.append(
+                    (symbol, float(occupancy), new_position, new_moment, label in moments)
+                )
+    return images
