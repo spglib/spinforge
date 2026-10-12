@@ -197,6 +197,72 @@ def test_compositions_and_legacy_occupancies_are_exclusive(antitranslation_model
         )
 
 
+@pytest.mark.parametrize("legacy_occupancies", [False, True])
+def test_writer_occupancy_bound_uses_caller_tolerance(antitranslation_model, legacy_occupancies):
+    sog, group, ssa = antitranslation_model
+    (moments,) = ssa.magnetic_moments_basis
+    occupancy = 1 + 5e-9
+    if legacy_occupancies:
+        chemistry = {"site_occupancies": [occupancy] * ssa.supercell.num_supercell_sites}
+    else:
+        compositions, selections = _chemistry(ssa, {"Mn": occupancy}, ("Mn",))
+        chemistry = {"site_compositions": compositions, "magnetic_species": selections}
+
+    with pytest.raises(ValueError, match="occupanc"):
+        SpinCifWriter(ssa, group, moments, spin_only_group=sog, atol=1e-12, **chemistry)
+
+    text = str(SpinCifWriter(ssa, group, moments, spin_only_group=sog, atol=1e-6, **chemistry))
+    (block,) = CifFile.from_str(text).data.values()
+    magnetic_occupancies = [
+        float(amount)
+        for species, amount in zip(
+            block.data["_atom_site_type_symbol"], block.data["_atom_site_occupancy"], strict=True
+        )
+        if species == "Mn"
+    ]
+    assert magnetic_occupancies
+    assert all(amount == occupancy for amount in magnetic_occupancies)
+    if legacy_occupancies:
+        chemistry = {"site_occupancies": [1 + 5e-7] * ssa.supercell.num_supercell_sites}
+    else:
+        compositions, selections = _chemistry(ssa, {"Mn": 1 + 5e-7}, ("Mn",))
+        chemistry = {"site_compositions": compositions, "magnetic_species": selections}
+    with pytest.raises(ValueError, match="occupanc"):
+        SpinCifWriter(ssa, group, moments, spin_only_group=sog, atol=1e-6, **chemistry)
+
+
+@pytest.mark.parametrize("legacy_occupancies", [False, True])
+def test_writer_occupancy_invariance_uses_caller_tolerance(
+    antitranslation_model, legacy_occupancies
+):
+    sog, group, ssa = antitranslation_model
+    (moments,) = ssa.magnetic_moments_basis
+    index = next(index for index, number in enumerate(ssa.supercell.numbers) if number == 25)
+    if legacy_occupancies:
+        occupancies = [0.8] * ssa.supercell.num_supercell_sites
+        occupancies[index] += 5e-7
+        chemistry = {"site_occupancies": occupancies}
+    else:
+        compositions, selections = _chemistry(ssa, {"Mn": 0.8}, ("Mn",))
+        compositions[index] = Composition({"Mn": 0.8 + 5e-7})
+        chemistry = {"site_compositions": compositions, "magnetic_species": selections}
+
+    with pytest.raises(ValueError, match="invariant under the SSG operations"):
+        SpinCifWriter(ssa, group, moments, spin_only_group=sog, atol=1e-8, **chemistry)
+
+    text = str(SpinCifWriter(ssa, group, moments, spin_only_group=sog, atol=1e-6, **chemistry))
+    (block,) = CifFile.from_str(text).data.values()
+    magnetic_occupancies = [
+        float(amount)
+        for species, amount in zip(
+            block.data["_atom_site_type_symbol"], block.data["_atom_site_occupancy"], strict=True
+        )
+        if species == "Mn"
+    ]
+    assert magnetic_occupancies
+    np.testing.assert_allclose(magnetic_occupancies, 0.8, atol=1e-6, rtol=0)
+
+
 def test_reader_rejects_different_selected_constituent_moments(external_scif):
     text = external_scif.replace(
         "_atom_site_symmetry_multiplicity\nMn1 Mn 0.25 0.0 0.0 2",

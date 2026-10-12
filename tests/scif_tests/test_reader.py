@@ -6,6 +6,7 @@ import re
 
 import numpy as np
 import pytest
+from pymatgen.core import Composition
 from spinspg.spin import SpinOnlyGroupType
 
 from spinforge.scif import SpinCifReader, SpinCifWriter
@@ -109,6 +110,85 @@ def test_reader_rejects_degenerate_spin_frame(external_scif):
         SpinCifReader(external_scif.replace("'a,b,c'", "'0,b,c'"))
     with pytest.raises(ValueError, match="not orthogonal"):
         SpinCifReader(external_scif.replace("'a,b,c'", "'a,a,c'"))
+
+
+@pytest.mark.parametrize("from_file", [False, True])
+def test_reader_spin_frame_uses_symprec(external_scif, tmp_path, from_file):
+    text = external_scif.replace("'a,b,c'", "'a,b+0.0005*a,c'")
+    source = text
+    read = SpinCifReader
+    if from_file:
+        path = tmp_path / "frame.scif"
+        path.write_text(text)
+        source = str(path)
+        read = SpinCifReader.from_file
+    with pytest.raises(ValueError, match="not orthogonal"):
+        read(source, symprec=1e-6)
+    structure = read(source, symprec=1e-2).get_structure()
+    assert len(structure) == 2
+    assert np.allclose(structure.site_properties["magmom"], [[0, 0, 3], [0, 0, 3]])
+
+
+@pytest.mark.parametrize("scale", [1e-200, 1e-10, 1e200])
+def test_reader_normalizes_nonzero_spin_axes(external_scif, scale):
+    text = external_scif.replace("'a,b,c'", f"'{scale:.200f}*a,b,c'")
+    reader = SpinCifReader(text, symprec=1e-6)
+    assert np.allclose(reader.spin_basis, np.eye(3), atol=1e-6, rtol=0)
+    assert np.allclose(reader.get_structure().site_properties["magmom"], [[0, 0, 3], [0, 0, 3]])
+
+
+@pytest.mark.parametrize("mixed", [False, True])
+def test_reader_occupancy_uses_symprec_without_normalizing(external_scif, mixed):
+    text = external_scif.replace(
+        "_atom_site_symmetry_multiplicity\n",
+        "_atom_site_symmetry_multiplicity\n_atom_site_occupancy\n",
+    ).replace(
+        "Mn1 Mn 0.25 0.0 0.0 2",
+        "Mn1 Mn 0.25 0.0 0.0 2 0.5\nFe1 Fe 0.25 0.0 0.0 2 0.500000005"
+        if mixed
+        else "Mn1 Mn 0.25 0.0 0.0 2 1.000000005",
+    )
+    with pytest.raises(ValueError, match="occupanc"):
+        SpinCifReader(text, symprec=1e-10).get_structure()
+    structure = SpinCifReader(text, symprec=1e-6).get_structure()
+    expected = {"Mn": 0.5, "Fe": 0.500000005} if mixed else {"Mn": 1.000000005}
+    assert len(structure) == 2
+    assert all(site.species.as_dict() == expected for site in structure)
+
+
+def test_reader_occupancy_respects_structure_limit(external_scif):
+    occupancy = 0.5 + 2 * Composition.amount_tolerance
+    text = external_scif.replace(
+        "_atom_site_symmetry_multiplicity\n",
+        "_atom_site_symmetry_multiplicity\n_atom_site_occupancy\n",
+    ).replace(
+        "Mn1 Mn 0.25 0.0 0.0 2",
+        f"Mn1 Mn 0.25 0.0 0.0 2 0.5\nFe1 Fe 0.25 0.0 0.0 2 {occupancy}",
+    )
+    with pytest.raises(ValueError, match="occupanc"):
+        SpinCifReader(text, symprec=1e-2).get_structure()
+
+
+def test_reader_orbit_positions_use_absolute_symprec(external_scif):
+    text = external_scif.replace("Mn1 Mn 0.25", "Mn1 Mn 0.000002")
+    structure = SpinCifReader(text, symprec=1e-7).get_structure()
+    assert sorted(site.frac_coords[0] for site in structure) == [0.000002, 0.999998]
+    with pytest.raises(ValueError, match="multiplicity"):
+        SpinCifReader(text, symprec=1e-3).get_structure()
+
+
+def test_reader_constituent_positions_use_absolute_symprec(external_scif):
+    text = external_scif.replace("2 -x,-y,z,+1 u,v,w\n", "").replace(
+        "Mn1 Mn 0.25 0.0 0.0 2",
+        "Mn1 Mn 0.000002 0.0 0.0 1\nFe1 Fe 0.999998 0.0 0.0 1",
+    )
+    structure = SpinCifReader(text, symprec=1e-7).get_structure()
+    assert {site.species_string: site.frac_coords[0] for site in structure} == {
+        "Mn": 0.000002,
+        "Fe": 0.999998,
+    }
+    with pytest.raises(ValueError, match="occupanc"):
+        SpinCifReader(text, symprec=1e-3).get_structure()
 
 
 def test_reader_legacy_cartn_frame_fallback(enumerated):

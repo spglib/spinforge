@@ -121,6 +121,24 @@ def test_mcif_writer_str_matches_write_file(mcif_path: str, tmp_path) -> None:
     assert out.read_text() == str(writer)
 
 
+@pytest.mark.parametrize("symprec", [1e-8, 3e-3, 1e-2])
+def test_translation_snapping_respects_cartesian_symprec(symprec) -> None:
+    structure = Structure(
+        Lattice.from_parameters(4, 5, 6, 70, 80, 75),
+        ["Fe"],
+        [[0.0002, 0.0002, 0.0002]],
+        site_properties={"magmom": [[0, 0, 2]]},
+    )
+    text = str(MCifWriter(structure, symprec=symprec))
+    (block,) = CifFile.from_str(text).data.values()
+    operations = CifParser.from_str(text).get_magsymops(block)
+    (site,) = structure
+    for operation in operations:
+        displacement = operation.operate(site.frac_coords) - site.frac_coords
+        displacement -= np.rint(displacement)
+        assert np.linalg.norm(displacement @ structure.lattice.matrix) <= symprec
+
+
 def test_save_requires_magmom_property() -> None:
     from pymatgen.core import Lattice, Structure
 
