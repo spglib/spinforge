@@ -36,9 +36,9 @@ if TYPE_CHECKING:
 @dataclass(frozen=True)
 class NontrivialSpinSpaceGroup:
     # Invariant space subgroup (H)
-    invariant_rotations: NDArrayInt
+    invariant_rotations: np.ndarray[tuple[int, int, int], np.dtype[np.int_]]
     """Invariant spatial rotation matrices w.r.t. the input cell."""
-    invariant_translations: NDArrayFloat
+    invariant_translations: np.ndarray[tuple[int, int], np.dtype[np.float64]]
     sublattice: Sublattice
     # Coset of spin translation group over invariant space subgroup (M/H)
     spin_translation_coset: SpinSymmetryOperations
@@ -141,7 +141,8 @@ class NontrivialSpinSpaceGroup:
                 # (r1, t1)(r3, t3) = (r1 @ r3, r1 @ t3 + t1)
                 r13 = r1 @ r3
                 t13 = r1 @ t3 + t1
-                r13_key = ndarray2d_to_integer_tuple(r13)
+                # spgrep annotates this input as float-only, but accepts integer arrays.
+                r13_key = ndarray2d_to_integer_tuple(r13)  # ty: ignore[invalid-argument-type]
                 mapping_13[r13_key] = t13
 
                 for t2, u2 in zip(
@@ -218,7 +219,8 @@ class NontrivialSpinSpaceGroup:
         translations = []
         seen = set()
         for rotation, translation in zip(operations.rotations, operations.translations):
-            key = ndarray2d_to_integer_tuple(rotation)
+            # spgrep annotates this input as float-only, but accepts integer arrays.
+            key = ndarray2d_to_integer_tuple(rotation)  # ty: ignore[invalid-argument-type]
             if key in seen:
                 continue
             seen.add(key)

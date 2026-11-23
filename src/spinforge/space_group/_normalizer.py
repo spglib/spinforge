@@ -189,8 +189,8 @@ def compute_parent_normalizer_action(
 def _normalizer_permutation(
     rotation: NDArrayInt,
     translation: NDArrayFloat,
-    subgroup_rotations: NDArrayInt,
-    subgroup_translations: NDArrayFloat,
+    subgroup_rotations: np.ndarray[tuple[int, int, int], np.dtype[np.int_]],
+    subgroup_translations: np.ndarray[tuple[int, int], np.dtype[np.float64]],
     translation_sublattice: Sublattice,
     *,
     atol: float,

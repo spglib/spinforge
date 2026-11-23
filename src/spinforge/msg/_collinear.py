@@ -55,8 +55,8 @@ def enumerate_magnetic_space_subgroups_collinear(
 
 
 def _get_magnetic_space_subgroup_collinear(
-    cart_rotations: NDArrayFloat,
-    spin_rotations: NDArrayFloat,
+    cart_rotations: np.ndarray[tuple[int, int, int], np.dtype[np.float64]],
+    spin_rotations: np.ndarray[tuple[int, int, int], np.dtype[np.float64]],
     *,
     atol: float,
 ) -> tuple[list[int], list[int], ConstructType]:

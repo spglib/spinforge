@@ -22,6 +22,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
   "Topic :: Scientific/Engineering :: Mathematics",
   "Topic :: Scientific/Engineering :: Physics",
 ]
@@ -38,7 +39,6 @@ dependencies = [
   "spgrep>=0.7",
   "spinspg>=0.3.2",
 ]
-
 optional-dependencies.dev = [
   "ipykernel",
   "prek",
@@ -59,15 +59,15 @@ optional-dependencies.testing = [
 [dependency-groups]
 dev = [ "spinforge[dev]" ]
 
-[tool.setuptools.package-data]
-"spinforge.testing" = [ "assets/*.cif", "assets/*.json" ]
+[tool.setuptools]
+package-data."spinforge.testing" = [ "assets/*.cif", "assets/*.json" ]
 
 [tool.setuptools_scm]
 
 [tool.ruff]
 line-length = 99
 extend-exclude = [ "docs" ]
-lint.extend-select = [
+lint.select = [
   "E",
   "F",
   "I",
@@ -84,19 +84,19 @@ lint.extend-ignore = [
   "E501",
 ]
 
-[tool.pytest.ini_options]
-addopts = "-m 'not slow and not cryst'"
-markers = [
+[tool.ty]
+src.exclude = [ "docs" ]
+
+[tool.pytest]
+ini_options.testpaths = [ "tests" ]
+ini_options.addopts = "-m 'not slow and not cryst'"
+ini_options.markers = [
   "cryst: requires a separately installed GAP with Cryst (deselected by default)",
   "slow: marks tests as slow (deselected by default, run with -m slow)",
 ]
-testpaths = [ "tests" ]
-filterwarnings = [
+ini_options.filterwarnings = [
   "ignore:Issues encountered while parsing CIF:UserWarning",
 ]
-
-[tool.ty.src]
-exclude = [ "docs" ]
 
 [tool.basedpyright]
 typeCheckingMode = "standard"

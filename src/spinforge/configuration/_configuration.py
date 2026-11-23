@@ -734,7 +734,8 @@ def _determine_real_order_parameter_directions(
     # is itself a projector, whose nonzero singular values are >= 1, while
     # the null-space singular values sit at the numerical-noise floor.
     singular_values, vh = np.linalg.svd(reynolds - np.eye(reynolds.shape[0]))[1:]
-    bases = list(vh[singular_values < atol])
+    invariant_basis: np.ndarray[tuple[int, int], np.dtype[np.float64]] = vh[singular_values < atol]
+    bases = list(invariant_basis)
     if len(bases) != num_invariant:
         logger.warning(
             f"Invariant-subspace rank ({len(bases)}) disagrees with the eigenvalue-1 "
@@ -752,10 +753,10 @@ def _determine_real_order_parameter_directions(
 
 
 def _varimax_rotation(
-    basis: NDArrayFloat,
+    basis: np.ndarray[tuple[int, int], np.dtype[np.float64]],
     max_iter: int = 1000,
     atol: float = 1e-9,
-) -> NDArrayFloat:
+) -> np.ndarray[tuple[int, int], np.dtype[np.float64]]:
     """Apply varimax rotation to maximize sparsity of basis vectors.
 
     Uses Kaiser's varimax criterion: maximize sum of variances of squared loadings.

@@ -85,7 +85,8 @@ def _get_nssg_label(nssg: NontrivialSpinSpaceGroup) -> str:
     )
 
     invariant_space_subgroup = SpaceGroup(
-        prim_rotations=nssg.invariant_rotations.tolist(),
+        # moyopy's stub omits one dimension of the rotation array.
+        prim_rotations=nssg.invariant_rotations.tolist(),  # ty: ignore[invalid-argument-type]
         prim_translations=nssg.invariant_translations.tolist(),
     )
 
@@ -248,7 +249,8 @@ def test_NiO_collinear_parent_axes_are_explicit_opt_in():
     target_nssg = None
     for sog, nssg, sas in all_magnetic_structures:
         inv_sg = SpaceGroup(
-            prim_rotations=nssg.invariant_rotations.tolist(),
+            # moyopy's stub omits one dimension of the rotation array.
+            prim_rotations=nssg.invariant_rotations.tolist(),  # ty: ignore[invalid-argument-type]
             prim_translations=nssg.invariant_translations.tolist(),
             basis=prim_cell.basis,
         )

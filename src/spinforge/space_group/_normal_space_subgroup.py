@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from spgrep.utils import NDArrayFloat, NDArrayInt
+import numpy as np
+from spgrep.utils import NDArrayInt
 
 from spinforge.utils.group_theory import GroupElementIndex
 
@@ -14,7 +15,7 @@ class NormalSpaceSubgroup:
     # Normal space subgroup (H)
     point_subgroup: list[GroupElementIndex]
     """Indices of the normal point subgroup."""
-    translations: NDArrayFloat
+    translations: np.ndarray[tuple[int, int], np.dtype[np.float64]]
     """Translation parts."""
     # Intermediate t-subgroup (M)
     sublattice: Sublattice

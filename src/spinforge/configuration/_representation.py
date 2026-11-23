@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 
 import numpy as np
-from spgrep.utils import NDArrayFloat, NDArrayInt
+from spgrep.utils import NDArrayFloat
 from spinspg.spin import SpinOnlyGroup, SpinOnlyGroupType
 
 from ._supercell import Supercell, SupercellSiteIndex
@@ -10,8 +10,8 @@ from ._supercell import Supercell, SupercellSiteIndex
 def get_site_representation(
     supercell: Supercell,
     sub_sites: Sequence[SupercellSiteIndex],
-    prim_rotations: NDArrayInt,
-    prim_translations: NDArrayFloat,
+    prim_rotations: np.ndarray[tuple[int, int, int], np.dtype[np.int_]],
+    prim_translations: np.ndarray[tuple[int, int], np.dtype[np.float64]],
 ) -> NDArrayFloat | None:
     order = len(prim_rotations)
 

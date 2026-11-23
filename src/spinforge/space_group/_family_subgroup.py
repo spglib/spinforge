@@ -173,7 +173,9 @@ class FamilySpaceSubgroupEnumerator:
         target_sublattice: Sublattice | None,
         atol: float,
     ) -> None:
-        self._parent_rotations = np.asarray(parent_rotations, dtype=np.int64)
+        self._parent_rotations: np.ndarray[tuple[int, int, int], np.dtype[np.int64]] = np.asarray(
+            parent_rotations, dtype=np.int64
+        )
         self._parent_translations = np.asarray(parent_translations, dtype=float)
         self._target_sublattice = target_sublattice
         self._atol = atol
@@ -229,7 +231,7 @@ class FamilySpaceSubgroupEnumerator:
                 )
 
     @property
-    def parent_rotations(self) -> NDArrayInt:
+    def parent_rotations(self) -> np.ndarray[tuple[int, int, int], np.dtype[np.int64]]:
         return self._parent_rotations
 
     @property
