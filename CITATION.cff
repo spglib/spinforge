@@ -4,7 +4,7 @@ message: >-
   preferred paper below.
 title: SpinForge
 type: software
-version: 1.0.0
+version: 1.0.1
 authors:
   - family-names: Shinohara
     given-names: Kohei
