@@ -418,7 +418,7 @@ def _validated_occupancies(
     permutations: list,
     *,
     atol: float,
-) -> NDArrayFloat:
+) -> np.ndarray[tuple[int], np.dtype[np.float64]]:
     """Per-site occupancies, checked against the SSG's site permutations.
 
     One asymmetric-unit row represents each orbit, so an occupancy pattern

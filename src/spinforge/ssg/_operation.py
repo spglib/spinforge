@@ -3,18 +3,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
-from spgrep.utils import NDArrayFloat, NDArrayInt
 
 from spinforge.space_group import Sublattice
 
 
 @dataclass
 class SpinSymmetryOperations:
-    rotations: NDArrayInt
+    rotations: np.ndarray[tuple[int, int, int], np.dtype[np.int_]]
     """(n, 3, 3)"""
-    translations: NDArrayFloat
+    translations: np.ndarray[tuple[int, int], np.dtype[np.float64]]
     """(n, 3)"""
-    spin_rotations: NDArrayFloat
+    spin_rotations: np.ndarray[tuple[int, int, int], np.dtype[np.float64]]
     """(n, 3, 3)"""
 
     def __post_init__(self):

@@ -146,8 +146,8 @@ QUIT_GAP(0);
 
 
 def _affine_matrices(
-    rotations: NDArrayInt,
-    translations: NDArrayFloat,
+    rotations: np.ndarray[tuple[int, int, int], np.dtype[np.int_]],
+    translations: np.ndarray[tuple[int, int], np.dtype[np.float64]],
 ) -> list[list[list[str]]]:
     matrices = []
     for rotation, translation in zip(rotations, translations):

@@ -23,8 +23,8 @@ from ._sublattice import Sublattice
 class NormalSpaceSubgroupEnumerator:
     def __init__(
         self,
-        prim_rotations: NDArrayInt,
-        prim_translations: NDArrayFloat,
+        prim_rotations: np.ndarray[tuple[int, int, int], np.dtype[np.int_]],
+        prim_translations: np.ndarray[tuple[int, int], np.dtype[np.float64]],
         table: NDArrayInt,
         *,
         sublattice: Sublattice | None = None,
@@ -46,7 +46,9 @@ class NormalSpaceSubgroupEnumerator:
                 self._factor_system[i, j] = np.around(fs).astype(int)
 
         self._tuple_prim_rotations = [
-            ndarray2d_to_integer_tuple(rotation) for rotation in self._prim_rotations
+            # spgrep annotates this input as float-only, but accepts integer arrays.
+            ndarray2d_to_integer_tuple(rotation)  # ty: ignore[invalid-argument-type]
+            for rotation in self._prim_rotations
         ]
         self._family_subgroup_enumerator = FamilySpaceSubgroupEnumerator(
             self._prim_rotations,
